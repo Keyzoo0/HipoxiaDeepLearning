@@ -1,5 +1,7 @@
 # Documentation for CTU-CHB Intrapartum Cardiotocography Database v1.0.0
 
+url : https://physionet.org/content/ctu-uhb-ctgdb/1.0.0/
+
 ## 1. Overview
 
 The CTU-CHB Intrapartum Cardiotocography (CTG) Database contains 552 selected CTG recordings from a total of 9,164 collected between 2010 and 2012 at University Hospital Brno (UHB), in collaboration with Czech Technical University (CTU) in Prague.

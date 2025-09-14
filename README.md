@@ -354,32 +354,515 @@ graph TD
     Y --> Z[Classification: Normal/Suspect/Hypoxia]
 ```
 
-### Data Processing Pipeline
+### Complete Deep Learning Pipeline (Raw Dataset → Prediction)
+
+```mermaid
+graph TB
+    subgraph "RAW DATASET"
+        A1[CTU-UHB Database<br/>PhysioNet]
+        A2[1001.hea - Header Files<br/>552 Records]
+        A3[1001.dat - Binary Data<br/>Signal Files]
+        A4[1001-ann.txt - Annotations<br/>Clinical Data]
+    end
+
+    subgraph "SIGNAL EXTRACTION"
+        B1[Read .hea Files<br/>Extract Metadata]
+        B2[Parse .dat Files<br/>Binary Signal Data]
+        B3[Extract FHR Signals<br/>4Hz Sampling Rate]
+        B4[Extract UC Signals<br/>Uterine Contractions]
+        B5[Quality Check<br/>Remove Artifacts]
+    end
+
+    subgraph "CLINICAL DATA PROCESSING"
+        C1[Parse Annotation Files<br/>Extract pH Values]
+        C2[Clinical Classification<br/>pH-based Labeling]
+        C3[pH ≥ 7.15 → Normal 0]
+        C4[7.05 ≤ pH < 7.15 → Suspect 1]
+        C5[pH < 7.05 → Hypoxia 2]
+        C6[mature_clinical_dataset.csv<br/>552 Records with Labels]
+    end
+
+    subgraph "SIGNAL PREPROCESSING"
+        D1[Signal Cleaning<br/>Noise Removal]
+        D2[Resampling to 4Hz<br/>Standardization]
+        D3[Signal Validation<br/>Length & Quality Check]
+        D4[individual_signals/<br/>1001_signals.npy to 2046_signals.npy]
+    end
+
+    subgraph "UNIFIED DATASET GENERATION"
+        E1[generateDataset.py<br/>Dataset Generator]
+        E2[Load Clinical Labels<br/>CSV Processing]
+        E3[Load Signal Files<br/>NPY Processing]
+        E4[Record Mapping<br/>Match Signals with Labels]
+        E5[dataset_info.csv<br/>Complete Record Database]
+    end
+
+    subgraph "METHOD-SPECIFIC PREPROCESSING"
+        F1{Select Deep Learning Method}
+
+        F2[GAN Method Path]
+        F3[MobileNet Method Path]
+        F4[ResNet Method Path]
+
+        F5[Normalize Signals<br/>Standard Length 5000]
+        F6[STFT Transform<br/>Time-Frequency Analysis]
+        F7[1D Signal Processing<br/>Direct Neural Input]
+
+        F8[data/gan/X_data.npy<br/>data/gan/y_data.npy]
+        F9[data/mobilenet/X_data.npy<br/>Spectrograms 224x224x3]
+        F10[data/resnet/X_data.npy<br/>1D Signals 5000 points]
+    end
+
+    subgraph "DEEP LEARNING TRAINING"
+        G1[GAN Training Pipeline]
+        G2[MobileNet Training Pipeline]
+        G3[ResNet Training Pipeline]
+
+        G4[CTGGAN Architecture<br/>Generator + Discriminator]
+        G5[Data Augmentation<br/>Synthetic Signal Generation]
+        G6[Balanced Dataset<br/>375 samples per class]
+        G7[Train Classifier<br/>Real + Synthetic Data]
+
+        G8[MobileNetV2 Backbone<br/>ImageNet Pretrained]
+        G9[Phase 1: Custom Head<br/>Frozen Backbone]
+        G10[Phase 2: Fine-tuning<br/>Top 30 Layers]
+
+        G11[Custom 1D ResNet<br/>Residual Connections]
+        G12[Data Augmentation<br/>Noise + Scaling + Cropping]
+        G13[Multi-scale Features<br/>64→128→256→512]
+    end
+
+    subgraph "MODEL PERSISTENCE"
+        H1[models/gan_models/<br/>Generator + Discriminator + Classifier]
+        H2[models/mobilenet_models/<br/>MobileNet Weights .h5]
+        H3[models/resnet_models/<br/>ResNet Weights .h5]
+
+        H4[Training Metadata<br/>History + Metrics]
+        H5[results/training_plots/<br/>Loss Curves + Accuracy]
+        H6[Model Checkpoints<br/>Best Weights Saved]
+    end
+
+    subgraph "PREDICTION PIPELINE"
+        I1[Input: Record Number<br/>1001-2046]
+        I2[Load Record Data<br/>Signal + Clinical Info]
+        I3{Select Trained Method}
+
+        I4[Load GAN Models<br/>Classifier Only]
+        I5[Load MobileNet Model<br/>Full Architecture]
+        I6[Load ResNet Model<br/>Full Architecture]
+
+        I7[Preprocess Signal<br/>Same as Training]
+        I8[Model Inference<br/>Forward Pass]
+        I9[Post-processing<br/>Softmax Probabilities]
+
+        I10[Generate Visualizations<br/>Signal Plots + Features]
+        I11[Clinical Interpretation<br/>Risk Assessment]
+        I12[Final Report<br/>Classification + Confidence]
+    end
+
+    subgraph "OUTPUT RESULTS"
+        J1{Classification Result}
+        J2[Normal pH ≥ 7.15<br/>✅ Safe Delivery]
+        J3[Suspect 7.05 ≤ pH < 7.15<br/>⚠️ Monitor Closely]
+        J4[Hypoxia pH < 7.05<br/>🚨 Immediate Action]
+
+        J5[Confidence Scores<br/>Probability Distribution]
+        J6[Feature Visualizations<br/>Model Interpretability]
+        J7[Clinical Recommendations<br/>Next Steps]
+    end
+
+    %% Flow connections
+    A1 --> A2
+    A1 --> A3
+    A1 --> A4
+
+    A2 --> B1
+    A3 --> B2
+    B1 --> B3
+    B2 --> B3
+    B3 --> B4
+    B4 --> B5
+
+    A4 --> C1
+    C1 --> C2
+    C2 --> C3
+    C2 --> C4
+    C2 --> C5
+    C3 --> C6
+    C4 --> C6
+    C5 --> C6
+
+    B5 --> D1
+    D1 --> D2
+    D2 --> D3
+    D3 --> D4
+
+    D4 --> E1
+    C6 --> E2
+    E1 --> E2
+    E2 --> E3
+    E3 --> E4
+    E4 --> E5
+
+    E5 --> F1
+    F1 --> F2
+    F1 --> F3
+    F1 --> F4
+
+    F2 --> F5
+    F3 --> F6
+    F4 --> F7
+
+    F5 --> F8
+    F6 --> F9
+    F7 --> F10
+
+    F8 --> G1
+    F9 --> G2
+    F10 --> G3
+
+    G1 --> G4
+    G4 --> G5
+    G5 --> G6
+    G6 --> G7
+
+    G2 --> G8
+    G8 --> G9
+    G9 --> G10
+
+    G3 --> G11
+    G11 --> G12
+    G12 --> G13
+
+    G7 --> H1
+    G10 --> H2
+    G13 --> H3
+
+    H1 --> H4
+    H2 --> H4
+    H3 --> H4
+    H4 --> H5
+    H5 --> H6
+
+    H6 --> I1
+    I1 --> I2
+    I2 --> I3
+
+    I3 --> I4
+    I3 --> I5
+    I3 --> I6
+
+    I4 --> I7
+    I5 --> I7
+    I6 --> I7
+
+    I7 --> I8
+    I8 --> I9
+    I9 --> I10
+    I10 --> I11
+    I11 --> I12
+
+    I12 --> J1
+    J1 --> J2
+    J1 --> J3
+    J1 --> J4
+
+    J2 --> J5
+    J3 --> J5
+    J4 --> J5
+
+    J5 --> J6
+    J6 --> J7
+
+    %% Styling
+    classDef rawData fill:#e1f5fe,stroke:#01579b,stroke-width:2px
+    classDef processing fill:#f3e5f5,stroke:#4a148c,stroke-width:2px
+    classDef training fill:#fff3e0,stroke:#e65100,stroke-width:2px
+    classDef models fill:#e8f5e8,stroke:#1b5e20,stroke-width:2px
+    classDef prediction fill:#fce4ec,stroke:#880e4f,stroke-width:2px
+    classDef results fill:#fff9c4,stroke:#f57f17,stroke-width:2px
+
+    class A1,A2,A3,A4 rawData
+    class B1,B2,B3,B4,B5,C1,C2,C3,C4,C5,C6,D1,D2,D3,D4,E1,E2,E3,E4,E5 processing
+    class F1,F2,F3,F4,F5,F6,F7,F8,F9,F10,G1,G2,G3,G4,G5,G6,G7,G8,G9,G10,G11,G12,G13 training
+    class H1,H2,H3,H4,H5,H6 models
+    class I1,I2,I3,I4,I5,I6,I7,I8,I9,I10,I11,I12 prediction
+    class J1,J2,J3,J4,J5,J6,J7 results
+```
+
+### Data Transformation Details
 
 ```mermaid
 graph LR
-    A[CTU-UHB Raw Data<br/>552 Records] --> B[Signal Extraction]
-    B --> C[FHR Signal Processing<br/>4Hz Sampling]
-    C --> D[Clinical Label Processing<br/>pH-based Classification]
+    subgraph "File Format Evolution"
+        A[.hea Header<br/>Metadata]
+        B[.dat Binary<br/>Raw Signals]
+        C[.txt Annotations<br/>Clinical Data]
 
-    D --> E{Method-Specific<br/>Preprocessing}
+        D[.npy Arrays<br/>Processed Signals]
+        E[.csv Tables<br/>Structured Labels]
 
-    E -->|GAN Path| F[Signal Normalization<br/>Standard Length 5000]
-    E -->|MobileNet Path| G[STFT Transform<br/>Spectrogram Generation]
-    E -->|ResNet Path| H[1D Signal Processing<br/>Data Augmentation]
+        F[.h5 Models<br/>Trained Weights]
+        G[.png Plots<br/>Visualizations]
+    end
 
-    F --> I[GAN Training Data<br/>Balance Classes]
-    G --> J[Spectrograms<br/>224×224×3 RGB]
-    H --> K[Augmented 1D Signals<br/>5000 points]
+    A --> D
+    B --> D
+    C --> E
+    D --> F
+    E --> F
+    F --> G
 
-    I --> L[(data/gan/)]
-    J --> M[(data/mobilenet/)]
-    K --> N[(data/resnet/)]
+    subgraph "Signal Processing Chain"
+        S1[Raw FHR Signal<br/>Variable Length]
+        S2[Cleaned Signal<br/>4Hz Sampling]
+        S3[Standardized Signal<br/>5000 Points]
+        S4[Method-Specific Format<br/>GAN/MobileNet/ResNet]
+    end
 
-    style A fill:#e1f5fe
-    style L fill:#c8e6c9
-    style M fill:#c8e6c9
-    style N fill:#c8e6c9
+    S1 --> S2
+    S2 --> S3
+    S3 --> S4
+
+    subgraph "Label Processing Chain"
+        L1[Raw pH Values<br/>Continuous]
+        L2[Clinical Categories<br/>Normal/Suspect/Hypoxia]
+        L3[Numerical Labels<br/>0/1/2]
+        L4[One-hot Encoding<br/>Training Ready]
+    end
+
+    L1 --> L2
+    L2 --> L3
+    L3 --> L4
+```
+
+### Model Architecture Deep Dive
+
+```mermaid
+graph TB
+    subgraph "GAN Training Process"
+        GA1[Real FHR Signals<br/>X_real, y_real]
+        GA2[Generator Network<br/>Noise + Label → Fake Signal]
+        GA3[Discriminator Network<br/>Real vs Fake Classification]
+        GA4[Adversarial Training<br/>Generator vs Discriminator]
+        GA5[Synthetic Data Generation<br/>Balance Dataset]
+        GA6[Final Classifier<br/>Real + Synthetic → 3 Classes]
+
+        GA1 --> GA3
+        GA2 --> GA3
+        GA3 --> GA4
+        GA4 --> GA2
+        GA4 --> GA5
+        GA1 --> GA6
+        GA5 --> GA6
+    end
+
+    subgraph "MobileNet Training Process"
+        MB1[FHR Signals<br/>Time Series]
+        MB2[STFT Transform<br/>Short-Time Fourier]
+        MB3[Spectrogram<br/>2D Image]
+        MB4[MobileNetV2 Backbone<br/>Feature Extraction]
+        MB5[Global Average Pooling<br/>Spatial Reduction]
+        MB6[Dense Classification<br/>3 Classes Output]
+
+        MB1 --> MB2
+        MB2 --> MB3
+        MB3 --> MB4
+        MB4 --> MB5
+        MB5 --> MB6
+    end
+
+    subgraph "ResNet Training Process"
+        RN1[FHR Signals<br/>1D Time Series]
+        RN2[Initial Conv1D<br/>Feature Extraction]
+        RN3[Residual Block 1<br/>64 Filters]
+        RN4[Residual Block 2<br/>128 Filters]
+        RN5[Residual Block 3<br/>256 Filters]
+        RN6[Residual Block 4<br/>512 Filters]
+        RN7[Global Average Pooling<br/>Temporal Reduction]
+        RN8[Dense Classification<br/>3 Classes Output]
+
+        RN1 --> RN2
+        RN2 --> RN3
+        RN3 --> RN4
+        RN4 --> RN5
+        RN5 --> RN6
+        RN6 --> RN7
+        RN7 --> RN8
+    end
+
+    style GA6 fill:#ffecb3
+    style MB6 fill:#e8f5e8
+    style RN8 fill:#e3f2fd
+```
+
+### Training Process Details
+
+```mermaid
+graph TD
+    subgraph "Training Initialization"
+        T1[Load Preprocessed Data<br/>X_data.npy + y_data.npy]
+        T2[Train/Validation Split<br/>80/20 Random Split]
+        T3[Data Augmentation<br/>Noise + Scaling + Rotation]
+        T4[Batch Generation<br/>Size: 16-32 samples]
+    end
+
+    subgraph "Model Training Loop"
+        T5[Initialize Model<br/>Random Weights]
+        T6[Forward Pass<br/>Input → Prediction]
+        T7[Loss Calculation<br/>Cross-entropy Loss]
+        T8[Backward Pass<br/>Gradient Computation]
+        T9[Weight Update<br/>Adam Optimizer]
+        T10{Convergence Check}
+        T11[Save Best Weights<br/>Validation Accuracy]
+    end
+
+    subgraph "Training Monitoring"
+        T12[Track Training Loss<br/>Per Epoch]
+        T13[Track Validation Accuracy<br/>Per Epoch]
+        T14[Early Stopping<br/>Prevent Overfitting]
+        T15[Learning Rate Scheduling<br/>Reduce on Plateau]
+        T16[Generate Training Plots<br/>Loss + Accuracy Curves]
+    end
+
+    T1 --> T2
+    T2 --> T3
+    T3 --> T4
+    T4 --> T5
+    T5 --> T6
+    T6 --> T7
+    T7 --> T8
+    T8 --> T9
+    T9 --> T10
+    T10 -->|Continue| T6
+    T10 -->|Converged| T11
+
+    T6 --> T12
+    T7 --> T12
+    T6 --> T13
+    T13 --> T14
+    T12 --> T15
+    T11 --> T16
+
+    style T11 fill:#c8e6c9
+    style T16 fill:#fff3e0
+```
+
+### Model Evaluation Pipeline
+
+```mermaid
+graph LR
+    subgraph "Model Assessment"
+        E1[Load Best Model<br/>Saved Weights]
+        E2[Load Test Set<br/>Unseen Data]
+        E3[Model Inference<br/>Batch Prediction]
+        E4[Calculate Metrics<br/>Accuracy, Precision, Recall]
+    end
+
+    subgraph "Performance Analysis"
+        E5[Confusion Matrix<br/>True vs Predicted]
+        E6[Classification Report<br/>Per-class Metrics]
+        E7[ROC Curves<br/>Binary Classification]
+        E8[Feature Importance<br/>Model Interpretability]
+    end
+
+    subgraph "Visualization Generation"
+        E9[Training History Plots<br/>Loss + Accuracy]
+        E10[Prediction Examples<br/>Signal + Prediction]
+        E11[Error Analysis<br/>Misclassified Cases]
+        E12[Clinical Validation<br/>Medical Correlation]
+    end
+
+    E1 --> E2
+    E2 --> E3
+    E3 --> E4
+    E4 --> E5
+    E5 --> E6
+    E6 --> E7
+    E7 --> E8
+    E8 --> E9
+    E9 --> E10
+    E10 --> E11
+    E11 --> E12
+
+    style E4 fill:#e8f5e8
+    style E12 fill:#ffcdd2
+```
+
+### Real-time Prediction Workflow
+
+```mermaid
+graph TD
+    subgraph "Input Processing"
+        P1[Record ID Input<br/>1001-2046]
+        P2[Load Signal File<br/>individual_signals/ID_signals.npy]
+        P3[Load Clinical Data<br/>mature_clinical_dataset.csv]
+        P4[Signal Validation<br/>Quality Check]
+    end
+
+    subgraph "Preprocessing Pipeline"
+        P5[Signal Cleaning<br/>Remove Artifacts]
+        P6{Method Selection}
+        P7[GAN Preprocessing<br/>Normalize 5000pts]
+        P8[MobileNet Preprocessing<br/>STFT → Spectrogram]
+        P9[ResNet Preprocessing<br/>1D Standardization]
+    end
+
+    subgraph "Model Inference"
+        P10[Load Trained Model<br/>.h5 Weights]
+        P11[Forward Pass<br/>Neural Network]
+        P12[Softmax Activation<br/>Probability Distribution]
+        P13[Confidence Thresholding<br/>Decision Boundary]
+    end
+
+    subgraph "Output Generation"
+        P14[Classification Result<br/>0=Normal, 1=Suspect, 2=Hypoxia]
+        P15[Confidence Scores<br/>Probability per Class]
+        P16[Risk Assessment<br/>Clinical Interpretation]
+        P17[Visualization Plots<br/>Signal + Features + Results]
+    end
+
+    subgraph "Clinical Decision Support"
+        P18{Risk Level}
+        P19[Low Risk<br/>Continue Monitoring]
+        P20[Medium Risk<br/>Enhanced Monitoring]
+        P21[High Risk<br/>Immediate Intervention]
+        P22[Clinical Alert<br/>Notify Medical Team]
+    end
+
+    P1 --> P2
+    P1 --> P3
+    P2 --> P4
+    P4 --> P5
+    P5 --> P6
+
+    P6 --> P7
+    P6 --> P8
+    P6 --> P9
+
+    P7 --> P10
+    P8 --> P10
+    P9 --> P10
+
+    P10 --> P11
+    P11 --> P12
+    P12 --> P13
+
+    P13 --> P14
+    P14 --> P15
+    P15 --> P16
+    P16 --> P17
+
+    P17 --> P18
+    P18 --> P19
+    P18 --> P20
+    P18 --> P21
+    P21 --> P22
+
+    style P19 fill:#c8e6c9
+    style P20 fill:#fff3e0
+    style P21 fill:#ffcdd2
+    style P22 fill:#ff8a80
 ```
 
 ### Training Workflow

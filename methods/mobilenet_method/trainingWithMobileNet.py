@@ -29,7 +29,7 @@ class MobileNetTrainer:
         self.signal_length = 5000  # Standardize signal length
         self.spectrogram_shape = (224, 224)  # MobileNet input size
         self.num_classes = 3
-        self.epochs = 50
+        self.epochs = 1
         self.batch_size = 16  # Smaller batch for memory efficiency
         
         self.label_names = ['Normal', 'Suspect', 'Hypoxia']
@@ -175,14 +175,14 @@ class MobileNetTrainer:
         model.compile(
             optimizer=keras.optimizers.Adam(learning_rate=0.001),
             loss='sparse_categorical_crossentropy',
-            metrics=['accuracy', 'precision', 'recall']
+            metrics=['accuracy']
         )
         
         self.model = model
         
         print(f"✅ MobileNet model built successfully")
         print(f"   Total parameters: {model.count_params():,}")
-        print(f"   Trainable parameters: {sum(p.numel() for p in model.trainable_weights):,}")
+        print(f"   Trainable parameters: {sum(tf.size(p).numpy() for p in model.trainable_weights):,}")
         
         return model
     
@@ -219,7 +219,7 @@ class MobileNetTrainer:
         
         history1 = self.model.fit(
             X_train, y_train,
-            epochs=20,
+            epochs=1,
             batch_size=self.batch_size,
             validation_data=(X_val, y_val),
             callbacks=callbacks,
@@ -241,24 +241,28 @@ class MobileNetTrainer:
         self.model.compile(
             optimizer=keras.optimizers.Adam(learning_rate=0.0001),
             loss='sparse_categorical_crossentropy',
-            metrics=['accuracy', 'precision', 'recall']
+            metrics=['accuracy']
         )
         
         # Continue training
         history2 = self.model.fit(
             X_train, y_train,
-            epochs=30,
+            epochs=1,
             batch_size=self.batch_size,
             validation_data=(X_val, y_val),
             callbacks=callbacks,
-            initial_epoch=len(history1.history['loss']),
+            # Skip initial_epoch to avoid issues
             verbose=1
         )
         
-        # Combine histories
+        # Combine histories safely
         combined_history = {}
         for key in history1.history.keys():
-            combined_history[key] = history1.history[key] + history2.history[key]
+            if key in history2.history:
+                combined_history[key] = history1.history[key] + history2.history[key]
+            else:
+                print(f"⚠️ Warning: Key '{key}' not found in phase 2 history")
+                combined_history[key] = history1.history[key]
         
         print("✅ MobileNet training completed!")
         
@@ -273,17 +277,19 @@ class MobileNetTrainer:
         y_pred = np.argmax(y_pred_probs, axis=1)
         
         # Calculate metrics
-        test_loss, test_accuracy, test_precision, test_recall = self.model.evaluate(
-            X_test, y_test, verbose=0
-        )
+        test_loss, test_accuracy = self.model.evaluate(X_test, y_test, verbose=0)
         
         # Classification report
         report = classification_report(
-            y_test, y_pred, 
+            y_test, y_pred,
             target_names=self.label_names,
             output_dict=True
         )
-        
+
+        # Get weighted average precision and recall
+        test_precision = report['weighted avg']['precision']
+        test_recall = report['weighted avg']['recall']
+
         print(f"📊 Test Results:")
         print(f"   Accuracy:  {test_accuracy:.4f}")
         print(f"   Precision: {test_precision:.4f}")
@@ -334,10 +340,20 @@ class MobileNetTrainer:
         
         # 3. Precision and Recall
         ax3 = fig.add_subplot(gs[0, 2])
-        ax3.plot(history['precision'], label='Training Precision', color='green')
-        ax3.plot(history['val_precision'], label='Validation Precision', color='red')
-        ax3.plot(history['recall'], label='Training Recall', color='purple', linestyle='--')
-        ax3.plot(history['val_recall'], label='Validation Recall', color='brown', linestyle='--')
+        # Only plot if keys exist
+        if 'precision' in history:
+            ax3.plot(history['precision'], label='Training Precision', color='green')
+            ax3.plot(history['val_precision'], label='Validation Precision', color='red')
+        if 'recall' in history:
+            ax3.plot(history['recall'], label='Training Recall', color='purple', linestyle='--')
+            ax3.plot(history['val_recall'], label='Validation Recall', color='brown', linestyle='--')
+
+        # If no precision/recall data, show test results as text
+        if 'precision' not in history:
+            ax3.text(0.5, 0.5, f'Test Results:\nPrecision: {evaluation_results["test_precision"]:.3f}\n'
+                               f'Recall: {evaluation_results["test_recall"]:.3f}',
+                    transform=ax3.transAxes, ha='center', va='center', fontsize=10,
+                    bbox=dict(boxstyle='round', facecolor='lightblue', alpha=0.8))
         ax3.set_title('Precision & Recall')
         ax3.set_xlabel('Epoch')
         ax3.set_ylabel('Metric Value')
@@ -422,7 +438,7 @@ class MobileNetTrainer:
         
         # Create architecture summary text
         total_params = self.model.count_params()
-        trainable_params = sum(p.numel() for p in self.model.trainable_weights)
+        trainable_params = sum(tf.size(p).numpy() for p in self.model.trainable_weights)
         
         arch_summary = f"""
 MobileNet Model Architecture Summary

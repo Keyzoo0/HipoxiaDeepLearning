@@ -677,18 +677,23 @@ def main():
     app.run()
 
 if __name__ == "__main__":
-    # Check for required packages
-    required_packages = [
-        'tensorflow', 'numpy', 'pandas', 'matplotlib', 
-        'seaborn', 'scikit-learn', 'inquirer'
-    ]
+    # Check for required packages with proper import names
+    package_imports = {
+        'tensorflow': 'tensorflow',
+        'numpy': 'numpy', 
+        'pandas': 'pandas',
+        'matplotlib': 'matplotlib.pyplot',
+        'seaborn': 'seaborn',
+        'scikit-learn': 'sklearn',  # Different import name
+        'inquirer': 'inquirer'
+    }
     
     missing_packages = []
-    for package in required_packages:
+    for package_name, import_name in package_imports.items():
         try:
-            __import__(package)
+            __import__(import_name)
         except ImportError:
-            missing_packages.append(package)
+            missing_packages.append(package_name)
     
     if missing_packages:
         print("❌ Missing required packages:")

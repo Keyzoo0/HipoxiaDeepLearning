@@ -27,7 +27,7 @@ class CTGGANTrainer:
         self.signal_length = 5000  # Standardize signal length
         self.noise_dim = 100
         self.num_classes = 3
-        self.epochs = 100
+        self.epochs = 1
         self.batch_size = 32
         
     def load_and_preprocess_data(self):
@@ -218,8 +218,10 @@ class CTGGANTrainer:
         # Apply attention
         attended = tf.matmul(attention_weights, value)  # [batch, seq_len, channels]
         
-        # Residual connection with learnable scaling
-        gamma = self.add_weight(name='attention_gamma', shape=(), initializer='zeros', trainable=True)
+        # Residual connection with learnable scaling using Dense layer
+        gamma_layer = layers.Dense(1, use_bias=False, kernel_initializer='zeros', name='attention_gamma')
+        gamma = gamma_layer(tf.reduce_mean(attended, axis=[1, 2], keepdims=True))
+        gamma = tf.broadcast_to(gamma, tf.shape(attended))
         output = gamma * attended + x
         
         return output
@@ -485,7 +487,7 @@ class CTGGANTrainer:
         
         history = self.classifier.fit(
             X_train_cls, y_train_cls,
-            epochs=50,
+            epochs=1,
             batch_size=32,
             validation_data=(X_val_cls, y_val_cls),
             verbose=1

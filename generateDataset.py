@@ -191,6 +191,31 @@ class DatasetGenerator:
         print(f"📁 Saved to: {method_dir}/")
         
         return X_data, y_data, record_ids
+    
+    def main(self):
+        """Main method to generate dataset"""
+        print("🚀 Starting Dataset Generation...")
+        
+        try:
+            # Generate unified dataset
+            dataset_df, valid_records = self.generate_unified_dataset()
+            
+            # Prepare data for each method
+            for method in ['gan', 'mobilenet', 'resnet']:
+                X, y, ids = self.prepare_data_for_training(method)
+                print()
+            
+            print("✅ Dataset generation completed successfully!")
+            print(f"\n📋 Summary:")
+            print(f"   Total valid records: {len(valid_records)}")
+            print(f"   Data prepared for: GAN, MobileNet, ResNet")
+            print(f"   Available records: {min(valid_records)} - {max(valid_records)}")
+            
+        except Exception as e:
+            print(f"❌ Error during dataset generation: {e}")
+            return False
+        
+        return True
 
 def main():
     """Main function to generate dataset"""

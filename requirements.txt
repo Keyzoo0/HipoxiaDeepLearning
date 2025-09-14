@@ -2,8 +2,7 @@
 # Core deep learning and data processing libraries
 
 # Deep Learning Frameworks
-tensorflow>=2.10.0,<2.16.0
-keras>=2.10.0
+tensorflow>=2.10.0,<2.14.0
 
 # Data Processing and Analysis
 numpy>=1.21.0,<1.25.0

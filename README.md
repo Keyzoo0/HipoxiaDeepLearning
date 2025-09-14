@@ -59,6 +59,181 @@ This AI system provides:
 - **Decision Support**: Assists medical professionals with evidence-based recommendations
 - **24/7 Monitoring**: Automated continuous analysis capability
 
+### File Structure Flow
+
+```mermaid
+graph TB
+    A[HipoxiaDeepLearning/] --> B[Main Interfaces]
+    A --> C[Core Modules]
+    A --> D[Data Storage]
+    A --> E[Method Implementations]
+
+    B --> B1[main.py<br/>Interactive CLI]
+    B --> B2[main_text.py<br/>Text-based CLI]
+
+    C --> C1[generateDataset.py<br/>Data Preprocessing]
+    C --> C2[fix_tensorflow.py<br/>Dependency Fixes]
+    C --> C3[install_requirements.py<br/>Setup Automation]
+
+    D --> D1[processed_data/<br/>Raw Signals]
+    D --> D2[data/<br/>Method-Specific Data]
+    D --> D3[models/<br/>Trained Models]
+    D --> D4[results/<br/>Visualizations]
+
+    E --> E1[methods/gan_method/<br/>CTGGAN Implementation]
+    E --> E2[methods/mobilenet_method/<br/>MobileNet Implementation]
+    E --> E3[methods/resnet_method/<br/>ResNet Implementation]
+
+    E1 --> E1A[trainingWithGanMethod.py]
+    E1 --> E1B[predictWithGanMethod.py]
+
+    E2 --> E2A[trainingWithMobileNet.py]
+    E2 --> E2B[predictWithMobileNet.py]
+
+    E3 --> E3A[trainingWithResNet.py]
+    E3 --> E3B[predictWithResNet.py]
+
+    style B1 fill:#e3f2fd
+    style B2 fill:#e3f2fd
+    style E1 fill:#ffecb3
+    style E2 fill:#e8f5e8
+    style E3 fill:#e1f5fe
+```
+
+### Class Architecture Diagram
+
+```mermaid
+classDiagram
+    class HipoxiaSystem {
+        +initialize_system()
+        +run_interactive_mode()
+        +run_text_mode()
+    }
+
+    class DatasetGenerator {
+        -base_path: str
+        -signals_path: Path
+        +load_clinical_data()
+        +load_signal_data(record_id)
+        +generate_unified_dataset()
+        +prepare_data_for_training(method)
+        +main()
+    }
+
+    class CTGGANTrainer {
+        -signal_length: int
+        -noise_dim: int
+        -epochs: int
+        +load_and_preprocess_data()
+        +build_generator()
+        +build_discriminator()
+        +train(X_train, y_train)
+        +build_classifier()
+        +save_models()
+    }
+
+    class MobileNetTrainer {
+        -spectrogram_shape: tuple
+        -epochs: int
+        -batch_size: int
+        +load_and_preprocess_data()
+        +build_mobilenet_model()
+        +train_model(X_train, y_train, X_val, y_val)
+        +evaluate_model(X_test, y_test)
+        +save_training_plots()
+    }
+
+    class ResNetTrainer {
+        -signal_length: int
+        -num_classes: int
+        -epochs: int
+        +load_and_preprocess_data()
+        +build_resnet1d_model()
+        +residual_block_1d()
+        +train_model(X_train, y_train, X_val, y_val)
+        +evaluate_model(X_test, y_test)
+    }
+
+    class GANPredictor {
+        -base_path: str
+        -models_path: Path
+        +load_models()
+        +preprocess_signal(signal)
+        +predict_record(record_id)
+        +generate_visualizations()
+    }
+
+    class MobileNetPredictor {
+        -base_path: str
+        -model: Model
+        +load_model()
+        +signal_to_spectrogram()
+        +predict_record(record_id)
+        +create_prediction_plots()
+    }
+
+    class ResNetPredictor {
+        -base_path: str
+        -signal_length: int
+        +load_model()
+        +preprocess_signal()
+        +predict_record(record_id)
+        +visualize_prediction()
+    }
+
+    HipoxiaSystem --> DatasetGenerator
+    HipoxiaSystem --> CTGGANTrainer
+    HipoxiaSystem --> MobileNetTrainer
+    HipoxiaSystem --> ResNetTrainer
+    HipoxiaSystem --> GANPredictor
+    HipoxiaSystem --> MobileNetPredictor
+    HipoxiaSystem --> ResNetPredictor
+
+    CTGGANTrainer --> GANPredictor : creates models
+    MobileNetTrainer --> MobileNetPredictor : creates models
+    ResNetTrainer --> ResNetPredictor : creates models
+
+    DatasetGenerator --> CTGGANTrainer : provides data
+    DatasetGenerator --> MobileNetTrainer : provides data
+    DatasetGenerator --> ResNetTrainer : provides data
+```
+
+### Data Flow Between Components
+
+```mermaid
+sequenceDiagram
+    participant User
+    participant Interface as Main Interface
+    participant DataGen as Dataset Generator
+    participant Trainer as Model Trainer
+    participant Predictor as Model Predictor
+    participant Storage as File Storage
+
+    User->>Interface: Start System
+    Interface->>DataGen: Generate Dataset
+    DataGen->>Storage: Save processed data
+    DataGen-->>Interface: Dataset Ready
+
+    User->>Interface: Train Model
+    Interface->>Trainer: Initialize Training
+    Trainer->>Storage: Load training data
+    Storage-->>Trainer: Return data
+    Trainer->>Trainer: Train neural network
+    Trainer->>Storage: Save trained model
+    Trainer-->>Interface: Training Complete
+
+    User->>Interface: Make Prediction
+    Interface->>Predictor: Predict record
+    Predictor->>Storage: Load model & data
+    Storage-->>Predictor: Return model & data
+    Predictor->>Predictor: Process & classify
+    Predictor->>Storage: Save visualizations
+    Predictor-->>Interface: Return results
+    Interface-->>User: Display prediction
+
+    Note over User, Storage: Complete workflow from data to prediction
+```
+
 ---
 
 ## 📊 Dataset Information
@@ -129,6 +304,238 @@ HipoxiaDeepLearning/
 ├── 📋 requirements.txt              # Full dependencies
 ├── 📋 requirements-minimal.txt      # Essential dependencies
 └── 📖 README.md                     # This documentation
+```
+
+---
+
+## 🔄 System Flowcharts
+
+### Overall System Architecture
+
+```mermaid
+graph TD
+    A[CTG Record Input] --> B{Interface Selection}
+    B -->|Interactive| C[main.py - Interactive CLI]
+    B -->|Text-based| D[main_text.py - Text CLI]
+
+    C --> E[Main Menu]
+    D --> E
+
+    E --> F{User Action}
+    F -->|Generate Dataset| G[Dataset Processing]
+    F -->|Train Models| H[Model Training]
+    F -->|Predict| I[Prediction Analysis]
+    F -->|System Info| J[Display Stats]
+
+    G --> K[Load CTU-UHB Data]
+    K --> L[Process 552 Records]
+    L --> M[Create Method-Specific Data]
+    M --> N[Save Dataset Files]
+
+    H --> O{Select Method}
+    O -->|GAN| P[CTGGAN Training]
+    O -->|MobileNet| Q[MobileNet Training]
+    O -->|ResNet| R[ResNet Training]
+
+    P --> S[Save Trained Models]
+    Q --> S
+    R --> S
+
+    I --> T{Select Method}
+    T -->|GAN| U[GAN Prediction]
+    T -->|MobileNet| V[MobileNet Prediction]
+    T -->|ResNet| W[ResNet Prediction]
+
+    U --> X[Generate Visualizations]
+    V --> X
+    W --> X
+
+    X --> Y[Display Results]
+    Y --> Z[Classification: Normal/Suspect/Hypoxia]
+```
+
+### Data Processing Pipeline
+
+```mermaid
+graph LR
+    A[CTU-UHB Raw Data<br/>552 Records] --> B[Signal Extraction]
+    B --> C[FHR Signal Processing<br/>4Hz Sampling]
+    C --> D[Clinical Label Processing<br/>pH-based Classification]
+
+    D --> E{Method-Specific<br/>Preprocessing}
+
+    E -->|GAN Path| F[Signal Normalization<br/>Standard Length 5000]
+    E -->|MobileNet Path| G[STFT Transform<br/>Spectrogram Generation]
+    E -->|ResNet Path| H[1D Signal Processing<br/>Data Augmentation]
+
+    F --> I[GAN Training Data<br/>Balance Classes]
+    G --> J[Spectrograms<br/>224×224×3 RGB]
+    H --> K[Augmented 1D Signals<br/>5000 points]
+
+    I --> L[(data/gan/)]
+    J --> M[(data/mobilenet/)]
+    K --> N[(data/resnet/)]
+
+    style A fill:#e1f5fe
+    style L fill:#c8e6c9
+    style M fill:#c8e6c9
+    style N fill:#c8e6c9
+```
+
+### Training Workflow
+
+```mermaid
+graph TD
+    A[Select Training Method] --> B{Method Choice}
+
+    B -->|GAN| C[CTGGAN Training]
+    B -->|MobileNet| D[MobileNet Training]
+    B -->|ResNet| E[ResNet Training]
+
+    C --> C1[Load Balanced Data]
+    C1 --> C2[Train Generator<br/>Create Synthetic Signals]
+    C2 --> C3[Train Discriminator<br/>Real vs Fake]
+    C3 --> C4[Train Classifier<br/>3-Class Classification]
+    C4 --> C5[Save Models<br/>Generator + Discriminator + Classifier]
+
+    D --> D1[Load Spectrogram Data]
+    D1 --> D2[Phase 1: Train Classification Head<br/>Frozen MobileNetV2]
+    D2 --> D3[Phase 2: Fine-tune Top Layers<br/>Lower Learning Rate]
+    D3 --> D4[Save MobileNet Model]
+
+    E --> E1[Load 1D Signal Data]
+    E1 --> E2[Apply Data Augmentation<br/>4x Dataset Size]
+    E2 --> E3[Train Custom 1D ResNet<br/>Residual Connections]
+    E3 --> E4[Save ResNet Model]
+
+    C5 --> F[Training Complete<br/>Generate Plots]
+    D4 --> F
+    E4 --> F
+
+    F --> G[Model Ready for Prediction]
+
+    style C fill:#ffecb3
+    style D fill:#e8f5e8
+    style E fill:#e3f2fd
+```
+
+### Prediction Workflow
+
+```mermaid
+graph TD
+    A[Enter Record Number<br/>1001-2046] --> B[Load Record Data]
+    B --> C{Select Method}
+
+    C -->|GAN| D[GAN Prediction Path]
+    C -->|MobileNet| E[MobileNet Prediction Path]
+    C -->|ResNet| F[ResNet Prediction Path]
+
+    D --> D1[Load GAN Classifier]
+    D1 --> D2[Preprocess Signal<br/>Normalize to 5000 points]
+    D2 --> D3[Generate Prediction<br/>Classification Probabilities]
+
+    E --> E1[Load MobileNet Model]
+    E1 --> E2[Convert to Spectrogram<br/>224×224×3]
+    E2 --> E3[MobileNet Inference<br/>Feature Extraction]
+
+    F --> F1[Load ResNet Model]
+    F1 --> F2[1D Signal Processing<br/>5000 points]
+    F2 --> F3[ResNet Inference<br/>Residual Feature Learning]
+
+    D3 --> G[Generate Visualizations]
+    E3 --> G
+    F3 --> G
+
+    G --> H[Create Result Plots]
+    H --> I[Signal Analysis Plots]
+    H --> J[Feature Activation Maps]
+    H --> K[Confidence Score Display]
+
+    I --> L[Final Results Display]
+    J --> L
+    K --> L
+
+    L --> M{Classification Result}
+    M -->|pH ≥ 7.15| N[Normal<br/>Safe Delivery]
+    M -->|7.05 ≤ pH < 7.15| O[Suspect<br/>Monitor Closely]
+    M -->|pH < 7.05| P[Hypoxia<br/>Immediate Intervention]
+
+    style N fill:#c8e6c9
+    style O fill:#fff3e0
+    style P fill:#ffcdd2
+```
+
+### Deep Learning Architecture Comparison
+
+```mermaid
+graph TD
+    A[FHR Signal Input<br/>5000 points] --> B{Processing Path}
+
+    B -->|GAN Method| C[Data Augmentation Path]
+    B -->|MobileNet Method| D[Spectrogram Path]
+    B -->|ResNet Method| E[1D CNN Path]
+
+    C --> C1[CTGGAN Generator<br/>Noise + Label → Synthetic Signal]
+    C1 --> C2[Balanced Dataset<br/>375 samples per class]
+    C2 --> C3[1D CNN Classifier<br/>Real + Synthetic Data]
+
+    D --> D1[STFT Transform<br/>Time-Frequency Analysis]
+    D1 --> D2[MobileNetV2 Backbone<br/>Pretrained ImageNet]
+    D2 --> D3[Custom Classification Head<br/>Global Average Pooling]
+
+    E --> E1[Direct 1D Processing<br/>No Frequency Transform]
+    E1 --> E2[Custom ResNet Blocks<br/>Skip Connections]
+    E2 --> E3[Multi-scale Feature Learning<br/>64→128→256→512 filters]
+
+    C3 --> F[Classification Output]
+    D3 --> F
+    E3 --> F
+
+    F --> G{Final Decision}
+    G -->|Class 0| H[Normal<br/>Confidence Score]
+    G -->|Class 1| I[Suspect<br/>Confidence Score]
+    G -->|Class 2| J[Hypoxia<br/>Confidence Score]
+
+    style C1 fill:#e1bee7
+    style D2 fill:#c5e1a5
+    style E2 fill:#b3e5fc
+```
+
+### Clinical Decision Support Flow
+
+```mermaid
+graph TD
+    A[CTG Monitoring<br/>During Labor] --> B[FHR Signal Analysis]
+    B --> C[AI System Processing<br/>Multi-Method Analysis]
+
+    C --> D{Risk Assessment}
+
+    D -->|Low Risk| E[Normal Classification<br/>pH ≥ 7.15]
+    D -->|Medium Risk| F[Suspect Classification<br/>7.05 ≤ pH < 7.15]
+    D -->|High Risk| G[Hypoxia Classification<br/>pH < 7.05]
+
+    E --> E1[Continue Monitoring<br/>Standard Protocol]
+    E1 --> E2[Regular Assessment<br/>Every 30 minutes]
+
+    F --> F1[Enhanced Monitoring<br/>Increased Frequency]
+    F1 --> F2[Consider Interventions<br/>Position Change, Oxygen]
+    F2 --> F3[Re-evaluate in 15 minutes]
+
+    G --> G1[Immediate Assessment<br/>Clinical Correlation]
+    G1 --> G2[Emergency Interventions<br/>Consider Delivery]
+    G2 --> G3[Multidisciplinary Team<br/>Obstetrician + Pediatrician]
+
+    F3 --> H{Improvement?}
+    H -->|Yes| E2
+    H -->|No| G1
+
+    E2 --> I[Continue Labor<br/>Natural Progression]
+    G3 --> J[Rapid Delivery<br/>C-Section if Needed]
+
+    style E fill:#c8e6c9
+    style F fill:#fff3e0
+    style G fill:#ffcdd2
+    style J fill:#ff8a80
 ```
 
 ---

@@ -1,81 +1,122 @@
-# Documentation for CTU-CHB Intrapartum Cardiotocography Database v1.0.0
+# RINGKASAN AKHIR PEMROSESAN DATASET CTU-UHB CTG UNTUK DETEKSI HIPOKSIA JANIN
 
-url : https://physionet.org/content/ctu-uhb-ctgdb/1.0.0/
+## Struktur Dataset Akhir
 
-## 1. Overview
+Dataset CTU-UHB CTG telah berhasil diproses menjadi beberapa komponen:
 
-The CTU-CHB Intrapartum Cardiotocography (CTG) Database contains 552 selected CTG recordings from a total of 9,164 collected between 2010 and 2012 at University Hospital Brno (UHB), in collaboration with Czech Technical University (CTU) in Prague.
+### 1. Dataset Klinis Matang (`mature_clinical_dataset.csv`)
+- Jumlah record: 552
+- Jumlah fitur: 35 (tidak termasuk label)
+- Label: `normal`, `suspect`, `hypoxia`
+- Distribusi kelas:
+  - Normal: 375 record (68%)
+  - Suspect: 121 record (22%)
+  - Hipoksia: 56 record (10%)
 
-- **Recordings:** 552 CTG recordings
-- **Duration:** Up to 90 minutes, starting no more than 90 minutes before delivery
-- **Signals:**
-  - Fetal Heart Rate (FHR)
-  - Uterine Contraction (UC)
-- **Sampling frequency:** 4 Hz
+### 2. Pembagian Train/Test Sets
+- **Train Set** (`mature_train_set.csv`):
+  - Jumlah record: 441 (80% dari total)
+  - Distribusi kelas:
+    - Normal: 299 record
+    - Suspect: 97 record
+    - Hipoksia: 45 record
 
----
+- **Test Set** (`mature_test_set.csv`):
+  - Jumlah record: 111 (20% dari total)
+  - Distribusi kelas:
+    - Normal: 76 record
+    - Suspect: 24 record
+    - Hipoksia: 11 record
 
-## 2. Inclusion Criteria
+### 3. Data Sinyal
+- Direktori: `/home/zainul/joki/HipoxiaDeepLearning/processed_data/signals/`
+- Jumlah file sinyal: 552
+- Format file: `.npy` (numpy array)
+- Setiap file berisi:
+  - Sinyal FHR (Fetal Heart Rate)
+  - Sinyal UC (Uterine Contractions)
+  - Informasi frekuensi sampling
 
-Recordings included in the dataset meet the following criteria:
+## Fitur Dataset Klinis
 
-- Singleton pregnancy
-- Gestational age over 36 weeks
-- No known fetal developmental defects
-- Second stage of labor duration ≤ 30 minutes
-- FHR signal quality > 50% in every 30-minute window
-- Available biochemical analysis of umbilical artery blood (e.g., pH)
-- Majority vaginal deliveries; 46 cesarean section (CS) recordings
+Dataset klinis matang berisi 35 fitur penting yang relevan untuk prediksi hipoksia janin:
 
----
+1. **Parameter Fetal**:
+   - pH: Nilai pH darah tali pusat (6.85-7.47)
+   - BDecf: Base deficit
+   - pCO2: Tekanan parsial CO2
+   - BE: Base excess
+   - Apgar1: Skor Apgar pada 1 menit
+   - Apgar5: Skor Apgar pada 5 menit
 
-## 3. Additional Available Data
+2. **Parameter Persalinan**:
+   - Gest.: Usia kehamilan (minggu)
+   - Weight(g): Berat janin (gram)
+   - Sex: Jenis kelamin janin
+   - Delivery descriptors: Informasi persalinan
 
-The dataset also includes clinical and outcome data:
+3. **Parameter Maternal**:
+   - Age: Usia ibu
+   - Gravidity: Kehamilan ke-
+   - Parity: Kelahiran ke-
+   - Risk factors: Diabetes, hipertensi, preeklamsia, dll.
 
-- **Maternal data:** age, parity, gravidity
-- **Delivery data:** delivery type (vaginal, operative vaginal, cesarean), labor duration, meconium-stained amniotic fluid, measurement type (ultrasound or scalp electrode)
-- **Fetal data:** sex, birth weight
-- **Fetal outcome data:** umbilical artery blood analysis (pH, pCO2, pO2, base excess, BDecf), Apgar scores, neonatal evaluation (oxygen requirement, seizures, NICU admission)
-- **Expert CTG evaluation:** by 9 obstetricians based on FIGO guidelines (not yet available)
+## Penggunaan untuk Deep Learning
 
----
+Dataset ini siap digunakan untuk pengembangan model deep learning dengan:
 
-## 4. Purpose of the Dataset
+1. **Input**:
+   - Sinyal FHR dan UC dari file `.npy`
+   - Atau fitur klinis dari dataset CSV
 
-This dataset was created to provide a homogeneous, high-quality CTG data source for:
+2. **Output**:
+   - Klasifikasi 3 kelas: `normal`, `suspect`, `hypoxia`
 
-- Research and development of CTG signal analysis methods
-- Monitoring fetal condition during labor
-- Developing early detection algorithms for fetal hypoxia and labor complications
+3. **Arsitektur Model yang Disarankan**:
+   - CNN untuk analisis sinyal waktu nyata
+   - LSTM/GRU untuk analisis sekuens temporal
+   - Hybrid CNN-LSTM untuk kombinasi spasial-temporal
+   - Fully Connected Network untuk fitur klinis
 
----
+## Validasi Dataset
 
-## 5. Fetal Hypoxia and Classification
+Dataset telah divalidasi dengan:
+- Pemeriksaan integritas data
+- Pembagian train/test yang seimbang
+- Normalisasi sinyal FHR ke rentang 60-200 bpm
+- Penghapusan nilai-nilai ekstrem yang tidak realistis
 
-### What is Fetal Hypoxia?
+## Langkah Selanjutnya
 
-Fetal hypoxia is a condition of insufficient oxygen supply to the fetus during labor, potentially causing serious complications.
+Dataset ini siap untuk digunakan dalam pengembangan model deep learning deteksi hipoksia janin. Anda dapat:
 
-### Hypoxia Indicators
+1. Menggunakan sinyal FHR/UC untuk model berbasis sinyal
+2. Menggunakan fitur klinis untuk model berbasis tabular
+3. Menggabungkan kedua pendekatan untuk model hybrid
+4. Melakukan evaluasi dengan metrik akurasi, presisi, recall, dan F1-score
 
-- The primary indicator is **umbilical artery blood pH**.
-- Hypoxia is associated with **metabolic acidosis**, reflected by decreased pH.
+Semua file tersedia di direktori `/home/zainul/joki/HipoxiaDeepLearning/processed_data/`.
 
-### pH Thresholds for Hypoxia
+## Cara Menjalankan
 
-- pH < 7.20: mild hypoxia or acidosis
-- pH < 7.10: moderate to severe hypoxia
-- pH < 7.00: severe hypoxia with high risk of complications
+1. **Membuat Virtual Environment**:
+   ```bash
+   python3 -m venv venv
+   ```
 
-### Studies and Classification
+2. **Mengaktifkan Virtual Environment**:
+   ```bash
+   source venv/bin/activate
+   ```
 
-- The dataset provides pH values as ground truth for hypoxia.
-- Researchers have developed machine learning and deep learning models using CTG signals (FHR and UC) to predict hypoxia based on pH.
-- The dataset does not include explicit hypoxia labels; labels must be derived from pH values.
+3. **Menginstal Dependencies**:
+   ```bash
+   pip install -r requirements.txt
+   ```
 
----
+4. **Menjalankan Program Utama**:
+   ```bash
+   python3 main.py
+   ```
 
-## 6. Example: Labeling Hypoxia Based on pH
-
-Assuming you have pH data for each CTG recording in a table:
+Setelah menjalankan program, Anda dapat mulai mengembangkan model deep learning menggunakan dataset yang telah diproses.

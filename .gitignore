@@ -1,7 +1,235 @@
-# Virtual environments
+# =============================================================================
+# GITIGNORE FOR DEEP LEARNING PROJECT - MULTIMODAL HYPOXIA DETECTION
+# =============================================================================
+
+# Python environments and cache
 venv/
 env/
 ENV/
 .venv/
 .env/
-__pycache__
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+pip-wheel-metadata/
+share/python-wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+
+# =============================================================================
+# MACHINE LEARNING SPECIFIC FILES
+# =============================================================================
+
+# Trained Models (Large Files)
+models/*.h5
+models/*.pkl
+models/*.joblib
+models/*.pt
+models/*.pth
+models/*.ckpt
+models/**/*.h5
+models/**/*.pkl
+models/**/*.weights
+
+# Model checkpoints and temporary files
+checkpoints/
+*.ckpt
+*.meta
+*.data-*
+*.index
+
+# TensorBoard logs
+logs/
+tensorboard_logs/
+tb_logs/
+runs/
+
+# MLflow tracking
+mlruns/
+.mlflow/
+
+# Weights and Biases
+wandb/
+
+# =============================================================================
+# DATA FILES (LARGE DATASETS)
+# =============================================================================
+
+# Processed datasets
+processed_data/*.csv
+processed_data/*.npy
+processed_data/*.npz
+processed_data/*.h5
+processed_data/**/*.npy
+processed_data/**/*.csv
+processed_data/signals/
+
+# Raw datasets
+raw_data/
+data/raw/
+dataset/
+*.dat
+*.mat
+
+# Generated sample files
+processed_data/*.png
+processed_data/*.jpg
+processed_data/*.jpeg
+
+# =============================================================================
+# RESULTS AND OUTPUTS
+# =============================================================================
+
+# Training results and visualizations
+results/**/*.png
+results/**/*.jpg
+results/**/*.pdf
+results/**/*.svg
+
+# Prediction results
+predictionResult*/
+prediction_results/
+outputs/
+
+# Journal analysis outputs
+journal_analysis_outputs/
+journal_results/
+
+# Generated reports
+reports/
+*.pdf
+*.docx
+
+# =============================================================================
+# SYSTEM AND IDE FILES
+# =============================================================================
+
+# IDE files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Jupyter Notebook
+.ipynb_checkpoints/
+*.ipynb
+
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+
+# Windows
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+$RECYCLE.BIN/
+
+# Linux
+*~
+.fuse_hidden*
+.directory
+.Trash-*
+.nfs*
+
+# =============================================================================
+# TEMPORARY AND LOG FILES
+# =============================================================================
+
+# Logs
+*.log
+logs/
+*.out
+*.err
+
+# Temporary files
+tmp/
+temp/
+.tmp/
+*.tmp
+*.temp
+
+# Backup files
+*.bak
+*.backup
+*~
+
+# =============================================================================
+# CONFIGURATION AND SECRETS
+# =============================================================================
+
+# Environment variables and secrets
+.env
+.env.local
+.env.development
+.env.production
+secrets.json
+config.ini
+
+# API keys
+api_keys.txt
+credentials.json
+
+# =============================================================================
+# RESEARCH SPECIFIC
+# =============================================================================
+
+# Large binary files
+*.bin
+*.dat
+*.db
+*.sqlite
+*.sqlite3
+
+# Compressed files
+*.zip
+*.tar.gz
+*.rar
+*.7z
+
+# Old/backup files
+main_legacy.py
+*_backup.py
+*_old.py
+*_temp.py
+
+# Test files (except essential ones)
+test_*.py
+*_test.py
+quick_*.py
+demo_*.py
+
+# =============================================================================
+# CUSTOM PROJECT EXCLUSIONS
+# =============================================================================
+
+# Keep only essential files, exclude large outputs
+# Allow: source code, documentation, config files
+# Exclude: large models, datasets, results
+
+# Essential files to keep (examples - remove this comment section in production):
+# ✅ *.py (source code)
+# ✅ *.md (documentation)
+# ✅ *.txt (small config files)
+# ✅ *.json (config files)
+# ✅ *.yml *.yaml (config files)
+# ✅ requirements.txt
+# ✅ README.md
+# ❌ Large datasets, models, results

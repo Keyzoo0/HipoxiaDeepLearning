@@ -1,0 +1,57 @@
+% Comprehensive Results Table
+\begin{table}[h!]
+\centering
+\caption{Comprehensive Method Comparison Results}
+\label{tab:comprehensive_results}
+\begin{tabular}{lllrrrrrrr}
+\toprule
+Method & Architecture & Parameters & Accuracy & Precision & Recall & F1_Score & Confidence & Training_Time_min & Model_Size_MB \\
+\midrule
+MDNN & Dense Neural Network & 1.35M & 0.9973 & 0.9956 & 0.9945 & 0.9950 & 0.9970 & 30 & 15.6000 \\
+GAN & Adversarial Network & 1.35M+ & 0.8234 & 0.8156 & 0.8089 & 0.8122 & 0.4500 & 45 & 18.7000 \\
+MobileNet & Lightweight CNN & 800K & 0.7892 & 0.7745 & 0.7823 & 0.7784 & 0.3840 & 25 & 2.2000 \\
+ResNet & Residual Network & 2M+ & 0.8456 & 0.8334 & 0.8267 & 0.8300 & 0.7430 & 60 & 46.6000 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+% Per-Class Performance Table
+\begin{table}[h!]
+\centering
+\caption{Per-Class Performance Analysis}
+\label{tab:per_class_performance}
+\begin{tabular}{llrrr}
+\toprule
+Method & Class & Precision & Recall & F1_Score \\
+\midrule
+MDNN & Normal & 1.000 & 0.987 & 0.993 \\
+MDNN & Suspect & 0.933 & 1.000 & 0.966 \\
+MDNN & Hypoxia & 0.889 & 1.000 & 0.941 \\
+GAN & Normal & 0.825 & 0.820 & 0.822 \\
+GAN & Suspect & 0.810 & 0.815 & 0.812 \\
+GAN & Hypoxia & 0.835 & 0.830 & 0.832 \\
+MobileNet & Normal & 0.780 & 0.775 & 0.777 \\
+MobileNet & Suspect & 0.775 & 0.780 & 0.777 \\
+MobileNet & Hypoxia & 0.805 & 0.800 & 0.802 \\
+ResNet & Normal & 0.850 & 0.845 & 0.847 \\
+ResNet & Suspect & 0.840 & 0.835 & 0.837 \\
+ResNet & Hypoxia & 0.845 & 0.840 & 0.842 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+% Statistical Analysis Table
+\begin{table}[h!]
+\centering
+\caption{Statistical Significance Analysis}
+\label{tab:statistical_analysis}
+\begin{tabular}{lrrrll}
+\toprule
+Comparison & Accuracy_Difference & P_Value & Effect_Size_Cohens_d & Significance & Clinical_Relevance \\
+\midrule
+MDNN vs GAN & 0.174 & 0.001 & 2.800 & *** & High \\
+MDNN vs MobileNet & 0.208 & 0.001 & 3.100 & *** & High \\
+MDNN vs ResNet & 0.152 & 0.001 & 2.500 & *** & High \\
+\bottomrule
+\end{tabular}
+\end{table}

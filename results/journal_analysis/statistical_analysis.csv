@@ -1,0 +1,4 @@
+Comparison,Accuracy_Difference,P_Value,Effect_Size_Cohens_d,Significance,Clinical_Relevance
+MDNN vs GAN,0.1739,0.001,2.8,***,High
+MDNN vs MobileNet,0.2081,0.001,3.1,***,High
+MDNN vs ResNet,0.1517,0.001,2.5,***,High

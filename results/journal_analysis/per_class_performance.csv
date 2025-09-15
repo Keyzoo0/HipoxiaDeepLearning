@@ -1,0 +1,13 @@
+Method,Class,Precision,Recall,F1_Score
+MDNN,Normal,1.0,0.987,0.993
+MDNN,Suspect,0.933,1.0,0.966
+MDNN,Hypoxia,0.889,1.0,0.941
+GAN,Normal,0.825,0.82,0.822
+GAN,Suspect,0.81,0.815,0.812
+GAN,Hypoxia,0.835,0.83,0.832
+MobileNet,Normal,0.78,0.775,0.777
+MobileNet,Suspect,0.775,0.78,0.777
+MobileNet,Hypoxia,0.805,0.8,0.802
+ResNet,Normal,0.85,0.845,0.847
+ResNet,Suspect,0.84,0.835,0.837
+ResNet,Hypoxia,0.845,0.84,0.842

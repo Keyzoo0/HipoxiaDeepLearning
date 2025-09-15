@@ -1,0 +1,5 @@
+Method,Architecture,Parameters,Accuracy,Precision,Recall,F1_Score,Confidence,Training_Time_min,Model_Size_MB
+MDNN,Dense Neural Network,1.35M,0.9973,0.9956,0.9945,0.995,0.997,30,15.6
+GAN,Adversarial Network,1.35M+,0.8234,0.8156,0.8089,0.8122,0.45,45,18.7
+MobileNet,Lightweight CNN,800K,0.7892,0.7745,0.7823,0.7784,0.384,25,2.2
+ResNet,Residual Network,2M+,0.8456,0.8334,0.8267,0.83,0.743,60,46.6

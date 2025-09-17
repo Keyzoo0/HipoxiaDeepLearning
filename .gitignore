@@ -78,7 +78,7 @@ wandb/
 # processed_data/*.h5
 # processed_data/**/*.npy
 # processed_data/**/*.csv
-processed_data/signals/
+# processed_data/signals/
 
 # Raw datasets
 raw_data/

@@ -37,15 +37,15 @@ MANIFEST
 # =============================================================================
 
 # Trained Models (Large Files)
-models/*.h5
-models/*.pkl
-models/*.joblib
-models/*.pt
-models/*.pth
-models/*.ckpt
-models/**/*.h5
-models/**/*.pkl
-models/**/*.weights
+# models/*.h5
+# models/*.pkl
+# models/*.joblib
+# models/*.pt
+# models/*.pth
+# models/*.ckpt
+# models/**/*.h5
+# models/**/*.pkl
+# models/**/*.weights
 
 # Model checkpoints and temporary files
 checkpoints/
@@ -72,12 +72,12 @@ wandb/
 # =============================================================================
 
 # Processed datasets
-processed_data/*.csv
-processed_data/*.npy
-processed_data/*.npz
-processed_data/*.h5
-processed_data/**/*.npy
-processed_data/**/*.csv
+# processed_data/*.csv
+# processed_data/*.npy
+# processed_data/*.npz
+# processed_data/*.h5
+# processed_data/**/*.npy
+# processed_data/**/*.csv
 processed_data/signals/
 
 # Raw datasets
@@ -88,19 +88,19 @@ dataset/
 *.mat
 
 # Generated sample files
-processed_data/*.png
-processed_data/*.jpg
-processed_data/*.jpeg
+# processed_data/*.png
+# processed_data/*.jpg
+# processed_data/*.jpeg
 
 # =============================================================================
 # RESULTS AND OUTPUTS
 # =============================================================================
 
 # Training results and visualizations
-results/**/*.png
-results/**/*.jpg
-results/**/*.pdf
-results/**/*.svg
+# results/**/*.png
+# results/**/*.jpg
+# results/**/*.pdf
+# results/**/*.svg
 
 # Prediction results
 predictionResult*/

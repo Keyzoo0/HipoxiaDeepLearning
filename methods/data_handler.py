@@ -106,11 +106,15 @@ class DataHandler:
             return None
 
     def preprocess_signal(self, fhr_signal):
-        """Preprocess FHR signal to standard length and normalization"""
+        """Enhanced FHR signal preprocessing for better model performance"""
         if fhr_signal is None or len(fhr_signal) == 0:
             return None
 
-        # Standardize length
+        # Remove extreme outliers first (values outside physiological range)
+        fhr_signal = np.array(fhr_signal)
+        fhr_signal = np.clip(fhr_signal, 50, 200)  # Physiological FHR range
+
+        # Standardize length with better interpolation
         if len(fhr_signal) < self.signal_length:
             fhr_processed = np.interp(
                 np.linspace(0, len(fhr_signal)-1, self.signal_length),
@@ -121,12 +125,19 @@ class DataHandler:
             step = len(fhr_signal) // self.signal_length
             fhr_processed = fhr_signal[::step][:self.signal_length]
 
-        # Z-score normalization
-        fhr_mean = np.mean(fhr_processed)
-        fhr_std = np.std(fhr_processed) + 1e-8
-        fhr_normalized = (fhr_processed - fhr_mean) / fhr_std
+        # Simplified robust normalization for better model convergence
+        # Use robust Z-score normalization only
+        fhr_median = np.median(fhr_processed)
+        fhr_mad = np.median(np.abs(fhr_processed - fhr_median))  # Median Absolute Deviation
 
-        # Clean outliers
+        if fhr_mad > 0:
+            # Robust Z-score using median and MAD
+            fhr_normalized = (fhr_processed - fhr_median) / (fhr_mad * 1.4826)  # 1.4826 for normal distribution
+        else:
+            # Fallback to simple centering
+            fhr_normalized = fhr_processed - fhr_median
+
+        # Clean statistical outliers
         fhr_normalized = np.nan_to_num(fhr_normalized, nan=0.0, posinf=1.0, neginf=-1.0)
         fhr_normalized = np.clip(fhr_normalized, -5, 5)
 
@@ -229,15 +240,63 @@ class DataHandler:
                 X_signals_test, X_clinical_test, y_test)
 
     def apply_data_augmentation(self, X_signals, X_clinical, y_labels):
-        """Apply data augmentation techniques for minority classes"""
-        print("🔄 Applying data augmentation for minority classes...")
+        """Advanced data augmentation for better minority class representation"""
+        print("🔄 Applying advanced data augmentation...")
 
-        # Combine features for SMOTE
-        X_combined = np.hstack([X_signals, X_clinical])
+        # Apply signal-specific augmentation first
+        X_signals_aug = []
+        X_clinical_aug = []
+        y_labels_aug = []
 
-        # Use SMOTEENN (SMOTE + Edited Nearest Neighbours) for better results
+        for i, (signal, clinical, label) in enumerate(zip(X_signals, X_clinical, y_labels)):
+            X_signals_aug.append(signal)
+            X_clinical_aug.append(clinical)
+            y_labels_aug.append(label)
+
+            # Enhanced augmentation for 85% target
+            if label == 2:  # Hypoxia - most critical
+                # Multiple augmentation techniques
+                # 1. Noise augmentation
+                noise_factor = 0.02
+                noise = np.random.normal(0, noise_factor, signal.shape)
+                augmented_signal = signal + noise
+                X_signals_aug.append(augmented_signal)
+                X_clinical_aug.append(clinical)
+                y_labels_aug.append(label)
+
+                # 2. Time shifting
+                shift = np.random.randint(-30, 30)
+                shifted_signal = np.roll(signal, shift)
+                X_signals_aug.append(shifted_signal)
+                X_clinical_aug.append(clinical)
+                y_labels_aug.append(label)
+
+            elif label == 1:  # Suspect - always augment
+                # Enhanced augmentation for Suspect class
+                if np.random.random() < 0.7:  # 70% chance
+                    # Time shifting
+                    shift = np.random.randint(-35, 35)
+                    shifted_signal = np.roll(signal, shift)
+                    X_signals_aug.append(shifted_signal)
+                    X_clinical_aug.append(clinical)
+                    y_labels_aug.append(label)
+
+                if np.random.random() < 0.3:  # 30% chance for noise
+                    noise_factor = 0.018
+                    noise = np.random.normal(0, noise_factor, signal.shape)
+                    augmented_signal = signal + noise
+                    X_signals_aug.append(augmented_signal)
+                    X_clinical_aug.append(clinical)
+                    y_labels_aug.append(label)
+
+        X_signals_aug = np.array(X_signals_aug)
+        X_clinical_aug = np.array(X_clinical_aug)
+        y_labels_aug = np.array(y_labels_aug)
+
+        # Apply SMOTE for remaining imbalance
+        X_combined = np.hstack([X_signals_aug, X_clinical_aug])
         smote_enn = SMOTETomek(random_state=42)
-        X_resampled, y_resampled = smote_enn.fit_resample(X_combined, y_labels)
+        X_resampled, y_resampled = smote_enn.fit_resample(X_combined, y_labels_aug)
 
         # Split back into signals and clinical
         X_signals_aug = X_resampled[:, :self.signal_length]

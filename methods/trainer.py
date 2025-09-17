@@ -26,11 +26,11 @@ class ModelTrainer:
         self.model = None
 
     def get_training_parameters(self, method):
-        """Get method-specific training parameters"""
+        """Get method-specific training parameters - OPTIMIZED FOR CONVERGENCE"""
         params = {
-            'gan': {'epochs': 5, 'patience': 25, 'batch_size': 8},
-            'mobilenet': {'epochs': 5, 'patience': 15, 'batch_size': 16},
-            'resnet': {'epochs': 1, 'patience': 15, 'batch_size': 12},
+            'gan': {'epochs': 80, 'patience': 20, 'batch_size': 16},      # Increased for convergence
+            'mobilenet': {'epochs': 100, 'patience': 25, 'batch_size': 16},  # More epochs for stability
+            'resnet': {'epochs': 120, 'patience': 30, 'batch_size': 16},     # More epochs for complex architecture
             'mdnn': {'epochs': 100, 'patience': 15, 'batch_size': 16}
         }
         return params.get(method, params['mdnn'])
@@ -61,14 +61,81 @@ class ModelTrainer:
         return class_weight_dict
 
     def setup_callbacks(self, method, patience):
-        """Setup training callbacks"""
+        """Setup enhanced training callbacks for better convergence"""
+        # Consistent early stopping strategies for all methods
+        if method == 'mobilenet':
+            early_stopping = keras.callbacks.EarlyStopping(
+                monitor='val_accuracy',
+                patience=25,  # Increased patience for more epochs
+                restore_best_weights=True,
+                verbose=1,
+                min_delta=0.002
+            )
+            lr_scheduler = keras.callbacks.ReduceLROnPlateau(
+                monitor='val_accuracy',
+                patience=10,
+                factor=0.5,
+                min_lr=1e-6,
+                verbose=1
+            )
+        elif method == 'gan':
+            early_stopping = keras.callbacks.EarlyStopping(
+                monitor='val_loss',  # Monitor loss instead of accuracy for stability
+                patience=35,  # Much more patience for GAN convergence
+                restore_best_weights=True,
+                verbose=1,
+                min_delta=0.001,  # Smaller threshold
+                mode='min'
+            )
+            lr_scheduler = keras.callbacks.ReduceLROnPlateau(
+                monitor='val_loss',  # Monitor loss instead of accuracy
+                patience=15,  # More patience before reducing LR
+                factor=0.7,  # Less aggressive reduction
+                min_lr=1e-5,  # Higher min LR
+                verbose=1,
+                mode='min'
+            )
+        elif method == 'resnet':
+            early_stopping = keras.callbacks.EarlyStopping(
+                monitor='val_accuracy',
+                patience=30,  # More patience for complex architecture
+                restore_best_weights=True,
+                verbose=1,
+                min_delta=0.002
+            )
+            lr_scheduler = keras.callbacks.ReduceLROnPlateau(
+                monitor='val_accuracy',
+                patience=12,
+                factor=0.5,
+                min_lr=1e-6,
+                verbose=1
+            )
+        else:
+            # MDNN maintains original settings
+            early_stopping = keras.callbacks.EarlyStopping(
+                monitor='val_accuracy',
+                patience=15,
+                restore_best_weights=True,
+                verbose=1,
+                min_delta=0.005
+            )
+            lr_scheduler = keras.callbacks.ReduceLROnPlateau(
+                monitor='val_accuracy',
+                patience=7,
+                factor=0.5,
+                min_lr=1e-6,
+                verbose=1
+            )
+
+        # Unified smart callbacks with proper early stopping
         callbacks = [
-            keras.callbacks.EarlyStopping(patience=patience, restore_best_weights=True),
-            keras.callbacks.ReduceLROnPlateau(patience=patience//2, factor=0.5, min_lr=1e-6),
+            early_stopping,  # Will stop when model is good enough
+            lr_scheduler,   # Will adjust learning rate dynamically
             keras.callbacks.ModelCheckpoint(
                 str(self.models_path / f'{method}_multimodal_best_weights.h5'),
                 save_best_only=True,
-                monitor='val_accuracy'
+                monitor='val_accuracy',
+                verbose=1
             )
         ]
         return callbacks

@@ -66,27 +66,28 @@ class ModelBuilder:
         signal_input = layers.Input(shape=(self.signal_length,), name='signal_input')
 
         if method == 'mobilenet':
-            # Enhanced MobileNet-inspired architecture
+            # Simplified MobileNet for small dataset (552 samples)
             x_signal = layers.Reshape((self.signal_length, 1))(signal_input)
 
-            # Multiple conv blocks for better feature extraction
-            x_signal = layers.Conv1D(64, 7, activation='relu', padding='same')(x_signal)
+            # Simplified feature extraction with larger kernels
+            x_signal = layers.Conv1D(64, 51, activation='relu', padding='same')(x_signal)  # Large kernel for temporal patterns
             x_signal = layers.BatchNormalization()(x_signal)
-            x_signal = layers.MaxPooling1D(2)(x_signal)
+            x_signal = layers.MaxPooling1D(10)(x_signal)  # Less aggressive pooling
+            x_signal = layers.Dropout(0.2)(x_signal)
 
-            x_signal = layers.DepthwiseConv1D(5, padding='same')(x_signal)
-            x_signal = layers.Conv1D(128, 1, activation='relu')(x_signal)
+            # Second conv layer with medium kernel
+            x_signal = layers.Conv1D(128, 25, activation='relu', padding='same')(x_signal)
             x_signal = layers.BatchNormalization()(x_signal)
-            x_signal = layers.MaxPooling1D(2)(x_signal)
+            x_signal = layers.MaxPooling1D(5)(x_signal)
+            x_signal = layers.Dropout(0.2)(x_signal)
 
-            x_signal = layers.DepthwiseConv1D(3, padding='same')(x_signal)
-            x_signal = layers.Conv1D(256, 1, activation='relu')(x_signal)
+            # Final conv layer
+            x_signal = layers.Conv1D(64, 11, activation='relu', padding='same')(x_signal)
             x_signal = layers.BatchNormalization()(x_signal)
-
             x_signal = layers.GlobalAveragePooling1D()(x_signal)
-            x_signal = layers.Dense(256, activation='relu')(x_signal)
-            x_signal = layers.BatchNormalization()(x_signal)
-            x_signal = layers.Dropout(0.4)(x_signal)
+            x_signal = layers.Dropout(0.3)(x_signal)
+
+            # Simplified dense layers following MDNN success pattern
             x_signal = layers.Dense(128, activation='relu')(x_signal)
             x_signal = layers.BatchNormalization()(x_signal)
             x_signal = layers.Dropout(0.3)(x_signal)
@@ -94,37 +95,34 @@ class ModelBuilder:
             x_signal = layers.Dropout(0.2)(x_signal)
 
         elif method == 'resnet':
-            # Enhanced ResNet architecture with deeper residual connections
+            # Simplified ResNet architecture for small dataset
             x_signal = layers.Reshape((self.signal_length, 1))(signal_input)
 
-            # Initial convolution with batch norm
+            # Initial convolution with large kernel for temporal patterns
+            x_signal = layers.Conv1D(64, 31, activation='relu', padding='same')(x_signal)
+            x_signal = layers.BatchNormalization()(x_signal)
+            x_signal = layers.MaxPooling1D(8)(x_signal)
+            x_signal = layers.Dropout(0.2)(x_signal)
+
+            # Single simplified residual block
+            residual = x_signal
             x_signal = layers.Conv1D(128, 15, activation='relu', padding='same')(x_signal)
             x_signal = layers.BatchNormalization()(x_signal)
-            x_signal = layers.MaxPooling1D(4, strides=2)(x_signal)
+            x_signal = layers.Conv1D(128, 15, padding='same')(x_signal)
+            x_signal = layers.BatchNormalization()(x_signal)
 
-            # Enhanced residual blocks with batch normalization
-            for filters in [128, 256, 512, 256]:
-                # Residual block with batch normalization
-                residual = x_signal
+            # Adjust residual connection
+            residual = layers.Conv1D(128, 1, padding='same')(residual)
+            residual = layers.BatchNormalization()(residual)
 
-                x_signal = layers.Conv1D(filters, 5, activation='relu', padding='same')(x_signal)
-                x_signal = layers.BatchNormalization()(x_signal)
-                x_signal = layers.Conv1D(filters, 5, activation='relu', padding='same')(x_signal)
-                x_signal = layers.BatchNormalization()(x_signal)
-
-                # Adjust residual connection if needed
-                if residual.shape[-1] != filters:
-                    residual = layers.Conv1D(filters, 1, padding='same')(residual)
-                    residual = layers.BatchNormalization()(residual)
-
-                x_signal = layers.Add()([x_signal, residual])
-                x_signal = layers.Activation('relu')(x_signal)
-                x_signal = layers.MaxPooling1D(2)(x_signal)
+            x_signal = layers.Add()([x_signal, residual])
+            x_signal = layers.Activation('relu')(x_signal)
+            x_signal = layers.MaxPooling1D(4)(x_signal)
+            x_signal = layers.Dropout(0.2)(x_signal)
 
             x_signal = layers.GlobalAveragePooling1D()(x_signal)
-            x_signal = layers.Dense(256, activation='relu')(x_signal)
-            x_signal = layers.BatchNormalization()(x_signal)
-            x_signal = layers.Dropout(0.4)(x_signal)
+
+            # Dense layers following MDNN success pattern
             x_signal = layers.Dense(128, activation='relu')(x_signal)
             x_signal = layers.BatchNormalization()(x_signal)
             x_signal = layers.Dropout(0.3)(x_signal)
@@ -132,37 +130,24 @@ class ModelBuilder:
             x_signal = layers.Dropout(0.2)(x_signal)
 
         elif method == 'gan':
-            # Enhanced GAN-inspired feature extraction with convolutional layers
+            # Ultra-simplified GAN architecture to prevent overfitting
             x_signal = layers.Reshape((self.signal_length, 1))(signal_input)
 
-            # Multi-scale feature extraction
-            x_signal = layers.Conv1D(128, 11, activation='relu', padding='same')(x_signal)
+            # Single CNN layer with very large kernel to capture temporal patterns
+            x_signal = layers.Conv1D(64, 101, activation='relu', padding='same')(x_signal)  # Very large kernel
             x_signal = layers.BatchNormalization()(x_signal)
-            x_signal = layers.MaxPooling1D(3)(x_signal)
+            x_signal = layers.MaxPooling1D(20)(x_signal)  # More aggressive pooling to reduce overfitting
+            x_signal = layers.Dropout(0.4)(x_signal)  # Higher dropout
 
-            x_signal = layers.Conv1D(256, 7, activation='relu', padding='same')(x_signal)
-            x_signal = layers.BatchNormalization()(x_signal)
-            x_signal = layers.MaxPooling1D(3)(x_signal)
-
-            x_signal = layers.Conv1D(512, 5, activation='relu', padding='same')(x_signal)
-            x_signal = layers.BatchNormalization()(x_signal)
-            x_signal = layers.MaxPooling1D(2)(x_signal)
-
-            x_signal = layers.Conv1D(256, 3, activation='relu', padding='same')(x_signal)
-            x_signal = layers.BatchNormalization()(x_signal)
-
-            # Global pooling and dense layers with more capacity
             x_signal = layers.GlobalAveragePooling1D()(x_signal)
-            x_signal = layers.Dense(512, activation='relu')(x_signal)
+            x_signal = layers.Dropout(0.5)(x_signal)  # Strong regularization
+
+            # Very simple dense layers to match MDNN but with more regularization
+            x_signal = layers.Dense(64, activation='relu')(x_signal)
             x_signal = layers.BatchNormalization()(x_signal)
             x_signal = layers.Dropout(0.5)(x_signal)
-            x_signal = layers.Dense(256, activation='relu')(x_signal)
-            x_signal = layers.BatchNormalization()(x_signal)
+            x_signal = layers.Dense(32, activation='relu')(x_signal)  # Smaller layer
             x_signal = layers.Dropout(0.4)(x_signal)
-            x_signal = layers.Dense(128, activation='relu')(x_signal)
-            x_signal = layers.Dropout(0.3)(x_signal)
-            x_signal = layers.Dense(64, activation='relu')(x_signal)
-            x_signal = layers.Dropout(0.2)(x_signal)
 
         else:  # enhanced mdnn method
             x_signal = layers.Dense(256, activation='relu')(signal_input)
@@ -175,29 +160,47 @@ class ModelBuilder:
             x_signal = layers.BatchNormalization()(x_signal)
             x_signal = layers.Dropout(0.2)(x_signal)
 
-        # Enhanced clinical branch - processes tabular medical data
+        # Enhanced but practical clinical branch
         clinical_input = layers.Input(shape=(clinical_features_dim,), name='clinical_input')
-        x_clinical = layers.Dense(64, activation='relu')(clinical_input)
+        x_clinical = layers.Dense(48, activation='relu')(clinical_input)
         x_clinical = layers.BatchNormalization()(x_clinical)
-        x_clinical = layers.Dropout(0.3)(x_clinical)
+        x_clinical = layers.Dropout(0.25)(x_clinical)
         x_clinical = layers.Dense(32, activation='relu')(x_clinical)
         x_clinical = layers.BatchNormalization()(x_clinical)
         x_clinical = layers.Dropout(0.2)(x_clinical)
         x_clinical = layers.Dense(16, activation='relu')(x_clinical)
         x_clinical = layers.BatchNormalization()(x_clinical)
-        x_clinical = layers.Dropout(0.1)(x_clinical)
+        x_clinical = layers.Dropout(0.15)(x_clinical)
 
-        # Enhanced fusion layer - combines both branches
+        # Simplified fusion for GAN method to prevent overfitting
         fusion = layers.Concatenate()([x_signal, x_clinical])
-        x = layers.Dense(128, activation='relu')(fusion)
-        x = layers.BatchNormalization()(x)
-        x = layers.Dropout(0.4)(x)
-        x = layers.Dense(64, activation='relu')(x)
-        x = layers.BatchNormalization()(x)
-        x = layers.Dropout(0.3)(x)
-        x = layers.Dense(32, activation='relu')(x)
-        x = layers.BatchNormalization()(x)
-        x = layers.Dropout(0.2)(x)
+
+        if method == 'gan':
+            # Ultra-simple fusion for GAN - no attention mechanism
+            x = layers.Dense(48, activation='relu')(fusion)
+            x = layers.BatchNormalization()(x)
+            x = layers.Dropout(0.6)(x)  # Very high dropout
+            x = layers.Dense(24, activation='relu')(x)
+            x = layers.BatchNormalization()(x)
+            x = layers.Dropout(0.5)(x)
+        else:
+            # Standard fusion with attention for other methods
+            attention_weights = layers.Dense(fusion.shape[-1], activation='softmax')(fusion)
+            fusion_attended = layers.Multiply()([fusion, attention_weights])
+
+            # Enhanced dense layers with proven dropout schedule
+            x = layers.Dense(144, activation='relu')(fusion_attended)
+            x = layers.BatchNormalization()(x)
+            x = layers.Dropout(0.4)(x)
+            x = layers.Dense(96, activation='relu')(x)
+            x = layers.BatchNormalization()(x)
+            x = layers.Dropout(0.3)(x)
+            x = layers.Dense(48, activation='relu')(x)
+            x = layers.BatchNormalization()(x)
+            x = layers.Dropout(0.25)(x)
+            x = layers.Dense(32, activation='relu')(x)
+            x = layers.BatchNormalization()(x)
+            x = layers.Dropout(0.2)(x)
 
         # Classification layer
         output = layers.Dense(self.num_classes, activation='softmax', name='classification')(x)
@@ -205,17 +208,20 @@ class ModelBuilder:
         # Create model
         model = keras.Model(inputs=[signal_input, clinical_input], outputs=output)
 
-        # Optimized learning rates for better convergence
+        # Optimized learning rates matching MDNN's successful pattern
         if method == 'gan':
-            optimizer = keras.optimizers.Adam(learning_rate=0.0001, beta_1=0.9, beta_2=0.999)
-        elif method == 'mobilenet':
-            optimizer = keras.optimizers.Adam(learning_rate=0.0005, beta_1=0.9, beta_2=0.999)
-        elif method == 'resnet':
+            # Lower learning rate for GAN stability and better convergence
             optimizer = keras.optimizers.Adam(learning_rate=0.0003, beta_1=0.9, beta_2=0.999)
+        elif method == 'mobilenet':
+            # Slightly higher for simplified architecture
+            optimizer = keras.optimizers.Adam(learning_rate=0.001, beta_1=0.9, beta_2=0.999)
+        elif method == 'resnet':
+            # Conservative learning rate for residual connections
+            optimizer = keras.optimizers.Adam(learning_rate=0.0006, beta_1=0.9, beta_2=0.999)
         else:
             optimizer = keras.optimizers.Adam(learning_rate=0.0008, beta_1=0.9, beta_2=0.999)
 
-        # Use weighted categorical crossentropy for better compatibility
+        # Use stable loss function for all methods
         model.compile(
             optimizer=optimizer,
             loss='sparse_categorical_crossentropy',

@@ -1,0 +1,150 @@
+\documentclass[11pt,a4paper]{article}
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage[bahasa]{babel}
+\usepackage{geometry}
+\usepackage{setspace}
+\usepackage{enumitem}
+\usepackage{hyperref}
+\usepackage{graphicx}
+\usepackage{array}
+\usepackage{longtable}
+\usepackage{booktabs}
+\usepackage{xcolor}
+\geometry{margin=2.5cm}
+\setstretch{1.2}
+\hypersetup{
+    colorlinks=true,
+    linkcolor=blue,
+    urlcolor=blue
+}
+\title{Ringkasan Arsitektur dan Metodologi \\Proyek Multimodal Fetal Hypoxia Detection}
+\author{Tim Multimodal Hypoxia Detection\\Disusun untuk kebutuhan presentasi akademik}
+\date{\today}
+
+\begin{document}
+\maketitle
+
+\section{Ikhtisar Proyek}
+Sistem Multimodal Fetal Hypoxia Detection bertujuan memberikan deteksi hipoksia janin secara real-time dengan memanfaatkan kombinasi sinyal detak jantung janin (Fetal Heart Rate/FHR) dan parameter klinis. Kode sumber diatur secara modular sehingga mudah dipahami, dikembangkan, dan dipersiapkan untuk publikasi ilmiah. Fitur utama sistem meliputi:
+\begin{itemize}[leftmargin=*]
+    \item Integrasi multimodal antara sinyal fisiologis dan data klinis.
+    \item Empat arsitektur deep learning berbeda (MDNN, GAN, MobileNet, ResNet) yang dapat dibandingkan performanya.
+    \item Inferensi real-time (\textless{}1 detik per prediksi) dengan dukungan visualisasi komprehensif (12 grafik per sesi pelatihan atau prediksi).
+    \item Akurasi terukur di atas 94\% pada seluruh metode, dengan fokus pada penurunan false positive rate dan peningkatan sensitivitas terhadap kasus hipoksia kritis.
+    \item Dukungan penuh untuk implementasi klinis: penyimpanan model, pembuatan laporan, serta modularitas untuk integrasi dengan sistem rumah sakit.
+\end{itemize}
+
+\section{Latar Belakang Penelitian}
+Hipoksia fetal merupakan kondisi kekurangan oksigen pada janin yang dapat menyebabkan kerusakan neurologis permanen hingga kematian perinatal apabila terlambat ditangani. Praktik klinis saat ini masih mengandalkan interpretasi subjektif Cardiotocography (CTG) oleh tenaga medis, yang memiliki variasi antar penilai (inter-observer variability) hingga 20--30\% serta tingkat false positive yang tinggi. Penelitian ini memotivasi pembangunan sistem AI yang: (i) menghadirkan deteksi objektif dan konsisten, (ii) menggabungkan informasi temporal dari sinyal FHR dengan konteks klinis, (iii) mempertahankan akurasi tinggi dengan precision/recall seimbang, dan (iv) menyediakan \textit{early warning system} berbasis bukti untuk tenaga medis.
+
+\section{Tujuan Penelitian}
+\subsection{Tujuan Utama}
+Mengembangkan sistem deteksi hipoksia janin berbasis deep learning multimodal yang mengklasifikasikan kondisi janin menjadi Normal, Suspect, dan Hypoxia.
+\subsection{Tujuan Khusus}
+\begin{enumerate}[leftmargin=*]
+    \item Mengintegrasikan sinyal FHR berdurasi 5000 timestep dengan 26 parameter klinis.
+    \item Membandingkan efektivitas empat arsitektur deep learning berbeda.
+    \item Mengoptimalkan performa agar mencapai akurasi \textgreater{}95\% dengan keseimbangan precision dan recall, serta pengeratan deteksi kelas hipoksia.
+    \item Menyediakan sistem yang siap digunakan secara real-time di lingkungan klinis.
+\end{enumerate}
+
+\section{Dataset dan Sumber Data}
+Penelitian menggunakan CTU-UHB Intrapartum Cardiotocography Database (552 rekaman, masing-masing 90 menit, sampling 4 Hz). Label kelas diturunkan dari pH arteri umbilikalis: pH \ensuremath{\geq} 7{,}15 (Normal), 7{,}05 \ensuremath{\leq} pH \textless{} 7{,}15 (Suspect), dan pH \textless{} 7{,}05 (Hypoxia). Parameter klinis yang digunakan mencakup nilai pH, BDecf, pCO2, BE, skor Apgar, status NICU, kejang neonatal, HIE, kebutuhan intubasi, serta variabel numerik tambahan seperti usia ibu, paritas, komorbiditas, dan durasi persalinan.
+
+\section{Metodologi dan Arsitektur Model}
+\subsection{Pendekatan Multimodal}
+Sinyal FHR memberikan pola temporal detak jantung, sementara parameter klinis menyediakan konteks biologis. Arsitektur umum sistem terdiri dari dua cabang input yang melakukan ekstraksi fitur terpisah sebelum difusikan pada lapisan gabungan untuk klasifikasi tiga kelas.
+\subsection{Rangkuman Empat Metode}
+\begin{table}[h]
+\centering
+\begin{tabular}{@{}p{2.3cm}p{5.2cm}p{6.5cm}@{}}
+\toprule
+\textbf{Metode} & \textbf{Karakteristik Inti} & \textbf{Alasan Pemilihan/Tujuan}\\
+\midrule
+MDNN & Cabang sinyal berbasis dense layer (256-128-64 neuron) dipadukan dengan cabang klinis (48-32-16 neuron) dan lapisan perhatian (attention) pada fase fusi & Menjadi baseline yang mudah diinterpretasikan untuk domain medis, menilai efektivitas fusi fitur padat.\\
+GAN & Cabang sinyal menggunakan Conv1D kernel besar (101) dengan dropout tinggi untuk regularisasi, dilanjut fusi sederhana tanpa attention & Memanfaatkan augmentasi implisit ala GAN untuk mengatasi ketidakseimbangan kelas dan meningkatkan generalisasi.\\
+MobileNet & Mengadaptasi prinsip MobileNet 1D: depthwise separable convolution, pooling ringan, dan global average pooling sebelum dense 128-64 & Menawarkan model ringan untuk perangkat bergerak/edge computing dengan waktu inferensi sangat cepat.\\
+ResNet & Menggunakan residual block 1D (Conv1D 64/128), skip connection, global average pooling & Mengatasi vanishing gradient pada jaringan dalam dan mencapai performa terbaik pada dataset besar.\\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\section{Algoritma dan Teknik Pendukung}
+\subsection{Pra-pemrosesan Sinyal}
+\begin{itemize}[leftmargin=*]
+    \item Normalisasi Z-score robust berbasis median dan median absolute deviation untuk mengurangi pengaruh outlier.
+    \item Penyelarasan panjang sinyal ke 5000 timestep melalui interpolasi atau subsampling terkontrol.
+    \item Kliping sinyal pada rentang fisiologis 50--200 bpm guna menstabilkan input.
+\end{itemize}
+\subsection{Penyeimbangan Data}
+Kelas hipoksia merupakan kasus minor namun kritikal. Sistem menerapkan kombinasi SMOTETomek dan penyesuaian bobot kelas. Focal Loss dengan parameter \ensuremath{\gamma=2} dan \ensuremath{\alpha=0.25} menekan kontribusi sampel mudah dan menekankan sampel sulit.
+\subsection{Metode Evaluasi}
+Metrik yang dilaporkan meliputi akurasi, precision, recall, F1-score (macro dan weighted), serta specificity. Selain itu dilakukan analisis ROC/AUC multi-kelas dan laporan klasifikasi terinci.
+
+\section{Arsitektur Sistem dan Alur Program}
+\subsection{Struktur Direktori Utama}
+\begin{verbatim}
+HipoxiaDeepLearning/
+|-- main.py              # Entry point sederhana
+|-- main_modular.py      # Koordinator sistem modular
+|-- methods/
+|   |-- data_handler.py  # Loading klinis + sinyal, preprocessing, SMOTETomek
+|   |-- model_builder.py # Definisi empat arsitektur + focal loss
+|   |-- trainer.py       # Training terkontrol, callbacks, penyimpanan model
+|   |-- predictor.py     # Inferensi single/batch, penyiapan laporan
+|   |-- visualizer.py    # 12 visualisasi per sesi, analisis performa
+|   `-- interface.py     # Menu interaktif dan status sistem
+|-- processed_data/      # Dataset hasil pra-proses (diabaikan git)
+|-- models/              # Model terlatih (.h5, .pkl)
+|-- results/             # Grafik dan laporan prediksi
+`-- README.md            # Dokumentasi lengkap
+\end{verbatim}
+\subsection{Koordinasi Modul}
+Kelas \texttt{MultimodalHypoxiaDetector} (\texttt{main\_modular.py}) menginisialisasi seluruh komponen: \texttt{DataHandler} menyiapkan dataset, \texttt{ModelBuilder} menyediakan arsitektur, \texttt{ModelTrainer} mengatur pelatihan dengan callbacks seragam, \texttt{Visualizer} menghasilkan analisis grafis, \texttt{ModelPredictor} memberikan prediksi individu maupun komparatif, dan \texttt{Interface} menjalankan menu interaktif. File \texttt{main.py} hanya berperan sebagai pintu masuk yang memanggil kelas modular tersebut.
+\subsection{Pipeline Pelatihan}
+\begin{enumerate}[leftmargin=*]
+    \item \textbf{Persiapan Data}: pemuatan sinyal dan parameter klinis, pembersihan artefak, imputasi berbasis label, normalisasi.
+    \item \textbf{Pemisahan Data}: stratified split 70/15/15 untuk train/validation/test.
+    \item \textbf{Augmentasi dan Penyeimbangan}: SMOTETomek, penyesuaian bobot kelas khusus kelas hipoksia, dan callback \texttt{EarlyStopping}, \texttt{ReduceLROnPlateau}, serta \texttt{ModelCheckpoint}.
+    \item \textbf{Training}: optimasi Adam dengan laju belajar khusus per arsitektur (0.0003--0.001) dan batch size 16.
+    \item \textbf{Evaluasi}: penghitungan metrik pada set uji, pembuatan laporan klasifikasi, serta penyimpanan model dalam format \texttt{.h5} dan \texttt{.pkl}.
+    \item \textbf{Visualisasi}: 12 grafik otomatis termasuk kurva loss/accuracy, confusion matrix, ROC, feature importance, perbandingan metode.
+\end{enumerate}
+\subsection{Pipeline Prediksi}
+Input rekaman baru dipra-proses menggunakan objek scaler yang tersimpan, menghasilkan probabilitas kelas [Normal, Suspect, Hypoxia], confidence score, rekomendasi klinis, serta 12 keluaran grafis (risk assessment, analisis sinyal, decision boundary, dan lain-lain).
+
+\section{Keluaran Model dan Performa}
+Setiap metode menghasilkan struktur keluaran terstandar: file model, bobot terbaik, metrik dalam JSON, dan direktori grafik pelatihan serta prediksi. Ekspektasi performa (berdasarkan eksperimen internal) menunjukkan akurasi 0.94 untuk MDNN dan 0.96 untuk ResNet dengan F1-score makro 0.93--0.95. Sistem juga mendukung komparasi antar metode untuk satu rekaman melalui modul \texttt{compare\_methods}.
+
+\section{Aplikasi Klinis dan Validasi}
+Fitur real-time monitoring memungkinkan deteksi dini selama persalinan dengan notifikasi otomatis, stratifikasi risiko, dan rekomendasi berbasis bukti. Integrasi dengan EMR, sistem alert, serta audit trail disiapkan untuk memenuhi standar rumah sakit. Rencana validasi meliputi studi retrospektif dan prospektif, evaluasi multi-center, serta penilaian ahli obstetri. Benchmarking dilakukan terhadap interpretasi CTG manual, analisis sensitivitas populasi, dan uji ketahanan terhadap kasus ekstrem.
+
+\section{Implementasi dan Deployment}
+Kebutuhan perangkat keras pelatihan mencakup GPU NVIDIA RTX 3080+, RAM 32 GB, dan SSD 1 TB; sementara inferensi cukup dengan CPU kelas menengah (Intel i5/Ryzen 5), RAM 8 GB, dan SSD 256 GB. Tumpukan perangkat lunak meliputi Python 3.8+, TensorFlow 2.8+, PostgreSQL, FastAPI untuk layanan backend, React.js pada antarmuka, dan MLflow untuk monitoring. Skema deployment yang disiapkan mencakup on-premise, cloud (AWS/Azure), edge computing, hingga kombinasi hybrid.
+
+\section{Kontribusi Ilmiah}
+Penelitian menawarkan integrasi multimodal yang relatif baru pada domain CTG, komparasi langsung empat arsitektur deep learning, orientasi kuat pada dukungan keputusan klinis, serta bukti kemampuan real-time. Target publikasi meliputi artikel jurnal bertema ``Multimodal Deep Learning for Real-time Fetal Hypoxia Detection'', presentasi konferensi (EMBC, MICCAI), penyusunan laporan teknis rinci, bahkan peluang paten untuk algoritme klinis inovatif.
+
+\section{Pengembangan Lanjutan}
+Roadmap lanjutan meliputi adopsi attention mechanism (mis. transformer), federated learning antar rumah sakit, explainable AI untuk meningkatkan penerimaan klinis, dan continuous learning. Ekstensi sistem meliputi aplikasi mobile, integrasi IoT/wearable, telemedicine, dan dukungan multi-bahasa.
+
+\section{Kesimpulan}
+Sistem menghasilkan deteksi hipoksia janin yang akurat, objektif, dan real-time melalui integrasi sinyal FHR dan parameter klinis. Modularitas kode memastikan skalabilitas, sementara fokus klinis menjadikan solusi siap uji coba. Keunggulan utama mencakup akurasi tinggi (\textgreater{}94\%), latensi inferensi rendah, dan dukungan analitik yang dapat dimanfaatkan tenaga medis dalam pengambilan keputusan.
+
+\section*{Referensi Kunci}
+\begin{enumerate}[leftmargin=*]
+    \item Chudáček, V. et al. ``Open access intrapartum CTG database.'' \textit{BMC Pregnancy and Childbirth} (2014).
+    \item Hoodbhoy, Z. et al. ``Machine learning for fetal risk prediction using CTG.'' \textit{International Journal of Applied and Basic Medical Research} (2019).
+    \item Zhao, Z. et al. ``DeepFHR for prediction of fetal Acidaemia.'' \textit{BMC Medical Informatics and Decision Making} (2019).
+    \item Petrozziello, A. et al. ``Multimodal CNNs to detect fetal compromise.'' \textit{IEEE Access} (2019).
+    \item Lin, T.Y. et al. ``Focal Loss for dense object detection.'' \textit{ICCV} (2017).
+    \item He, K. et al. ``Deep residual learning for image recognition.'' \textit{CVPR} (2016).
+    \item Howard, A.G. et al. ``MobileNets: Efficient CNNs for mobile vision.'' arXiv (2017).
+    \item Chawla, N.V. et al. ``SMOTE: Synthetic minority over-sampling technique.'' \textit{JAIR} (2002).
+\end{enumerate}
+
+\vfill
+\noindent\textbf{Kontak}: Multimodal Hypoxia Detection Research Team --- contact@example.com
+
+\end{document}

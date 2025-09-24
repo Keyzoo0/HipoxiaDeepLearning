@@ -130,24 +130,27 @@ class ModelBuilder:
             x_signal = layers.Dropout(0.2)(x_signal)
 
         elif method == 'gan':
-            # Ultra-simplified GAN architecture to prevent overfitting
+            # Simplified GAN architecture - 2 conv layers for faster training
             x_signal = layers.Reshape((self.signal_length, 1))(signal_input)
 
-            # Single CNN layer with very large kernel to capture temporal patterns
-            x_signal = layers.Conv1D(64, 101, activation='relu', padding='same')(x_signal)  # Very large kernel
+            # First conv block - broader temporal patterns
+            x_signal = layers.Conv1D(64, 25, activation='relu', padding='same')(x_signal)
             x_signal = layers.BatchNormalization()(x_signal)
-            x_signal = layers.MaxPooling1D(20)(x_signal)  # More aggressive pooling to reduce overfitting
-            x_signal = layers.Dropout(0.4)(x_signal)  # Higher dropout
+            x_signal = layers.MaxPooling1D(10)(x_signal)
+            x_signal = layers.Dropout(0.2)(x_signal)
 
+            # Second conv block - refined features
+            x_signal = layers.Conv1D(128, 11, activation='relu', padding='same')(x_signal)
+            x_signal = layers.BatchNormalization()(x_signal)
             x_signal = layers.GlobalAveragePooling1D()(x_signal)
-            x_signal = layers.Dropout(0.5)(x_signal)  # Strong regularization
+            x_signal = layers.Dropout(0.2)(x_signal)
 
-            # Very simple dense layers to match MDNN but with more regularization
-            x_signal = layers.Dense(64, activation='relu')(x_signal)
+            # Simplified dense layers matching MDNN pattern
+            x_signal = layers.Dense(128, activation='relu')(x_signal)
             x_signal = layers.BatchNormalization()(x_signal)
-            x_signal = layers.Dropout(0.5)(x_signal)
-            x_signal = layers.Dense(32, activation='relu')(x_signal)  # Smaller layer
-            x_signal = layers.Dropout(0.4)(x_signal)
+            x_signal = layers.Dropout(0.2)(x_signal)
+            x_signal = layers.Dense(64, activation='relu')(x_signal)
+            x_signal = layers.Dropout(0.1)(x_signal)
 
         else:  # enhanced mdnn method
             x_signal = layers.Dense(256, activation='relu')(signal_input)
@@ -172,22 +175,24 @@ class ModelBuilder:
         x_clinical = layers.BatchNormalization()(x_clinical)
         x_clinical = layers.Dropout(0.15)(x_clinical)
 
-        # Simplified fusion for GAN method to prevent overfitting
         fusion = layers.Concatenate()([x_signal, x_clinical])
 
-        if method == 'gan':
-            # Ultra-simple fusion for GAN - no attention mechanism
-            x = layers.Dense(48, activation='relu')(fusion)
-            x = layers.BatchNormalization()(x)
-            x = layers.Dropout(0.6)(x)  # Very high dropout
-            x = layers.Dense(24, activation='relu')(x)
-            x = layers.BatchNormalization()(x)
-            x = layers.Dropout(0.5)(x)
-        else:
-            # Standard fusion with attention for other methods
-            attention_weights = layers.Dense(fusion.shape[-1], activation='softmax')(fusion)
-            fusion_attended = layers.Multiply()([fusion, attention_weights])
+        # Apply lightweight attention across modalities for all methods
+        attention_weights = layers.Dense(fusion.shape[-1], activation='softmax')(fusion)
+        fusion_attended = layers.Multiply()([fusion, attention_weights])
 
+        if method == 'gan':
+            # GAN fusion keeps dimensions moderate with softer dropout
+            x = layers.Dense(128, activation='relu')(fusion_attended)
+            x = layers.BatchNormalization()(x)
+            x = layers.Dropout(0.3)(x)
+            x = layers.Dense(80, activation='relu')(x)
+            x = layers.BatchNormalization()(x)
+            x = layers.Dropout(0.25)(x)
+            x = layers.Dense(48, activation='relu')(x)
+            x = layers.BatchNormalization()(x)
+            x = layers.Dropout(0.2)(x)
+        else:
             # Enhanced dense layers with proven dropout schedule
             x = layers.Dense(144, activation='relu')(fusion_attended)
             x = layers.BatchNormalization()(x)
@@ -210,8 +215,8 @@ class ModelBuilder:
 
         # Optimized learning rates matching MDNN's successful pattern
         if method == 'gan':
-            # Lower learning rate for GAN stability and better convergence
-            optimizer = keras.optimizers.Adam(learning_rate=0.0003, beta_1=0.9, beta_2=0.999)
+            # Increased learning rate for faster convergence
+            optimizer = keras.optimizers.Adam(learning_rate=0.001, beta_1=0.9, beta_2=0.999)
         elif method == 'mobilenet':
             # Slightly higher for simplified architecture
             optimizer = keras.optimizers.Adam(learning_rate=0.001, beta_1=0.9, beta_2=0.999)
@@ -221,10 +226,12 @@ class ModelBuilder:
         else:
             optimizer = keras.optimizers.Adam(learning_rate=0.0008, beta_1=0.9, beta_2=0.999)
 
-        # Use stable loss function for all methods
+        # Use standard loss function for all methods for stability
+        loss_fn = 'sparse_categorical_crossentropy'
+
         model.compile(
             optimizer=optimizer,
-            loss='sparse_categorical_crossentropy',
+            loss=loss_fn,
             metrics=['accuracy']
         )
 

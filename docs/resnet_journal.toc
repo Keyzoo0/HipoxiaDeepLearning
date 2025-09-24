@@ -1,0 +1,24 @@
+\contentsline {section}{\numberline {1}Bab 1: Pendahuluan}{3}{section.1}%
+\contentsline {subsection}{\numberline {1.1}Latar Belakang}{3}{subsection.1.1}%
+\contentsline {subsection}{\numberline {1.2}Rumusan Masalah}{3}{subsection.1.2}%
+\contentsline {subsection}{\numberline {1.3}Tujuan Penelitian}{3}{subsection.1.3}%
+\contentsline {subsection}{\numberline {1.4}Batasan Masalah}{4}{subsection.1.4}%
+\contentsline {section}{\numberline {2}Bab 2: Landasan Teori}{4}{section.2}%
+\contentsline {subsection}{\numberline {2.1}Dataset CTU-UHB (PSYCONET 1.0.0)}{4}{subsection.2.1}%
+\contentsline {subsection}{\numberline {2.2}Konversi Berkas ke Representasi \texttt {.npy}}{4}{subsection.2.2}%
+\contentsline {subsection}{\numberline {2.3}Arsitektur ResNet Multimodal}{5}{subsection.2.3}%
+\contentsline {section}{\numberline {3}Bab 3: Metodologi Penelitian}{7}{section.3}%
+\contentsline {subsection}{\numberline {3.1}Desain Sistem}{7}{subsection.3.1}%
+\contentsline {subsection}{\numberline {3.2}Akuisisi dan Persiapan Data}{7}{subsection.3.2}%
+\contentsline {subsection}{\numberline {3.3}Konfigurasi Model dan Pelatihan}{8}{subsection.3.3}%
+\contentsline {subsection}{\numberline {3.4}Evaluasi dan Visualisasi}{8}{subsection.3.4}%
+\contentsline {section}{\numberline {4}Bab 4: Hasil dan Pembahasan}{12}{section.4}%
+\contentsline {subsection}{\numberline {4.1}Hasil Pelatihan}{12}{subsection.4.1}%
+\contentsline {subsection}{\numberline {4.2}Analisis Kinerja}{12}{subsection.4.2}%
+\contentsline {subsection}{\numberline {4.3}Analisis Prediksi Individual}{12}{subsection.4.3}%
+\contentsline {subsection}{\numberline {4.4}Implikasi Klinis}{13}{subsection.4.4}%
+\contentsline {subsection}{\numberline {4.5}Keterbatasan}{13}{subsection.4.5}%
+\contentsline {section}{\numberline {5}Bab 5: Kesimpulan dan Saran}{13}{section.5}%
+\contentsline {subsection}{\numberline {5.1}Kesimpulan}{13}{subsection.5.1}%
+\contentsline {subsection}{\numberline {5.2}Saran}{13}{subsection.5.2}%
+\contentsline {subsection}{\numberline {5.3}Rencana Penelitian Lanjutan}{14}{subsection.5.3}%

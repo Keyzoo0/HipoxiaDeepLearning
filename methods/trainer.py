@@ -28,7 +28,7 @@ class ModelTrainer:
     def get_training_parameters(self, method):
         """Get method-specific training parameters - OPTIMIZED FOR CONVERGENCE"""
         params = {
-            'gan': {'epochs': 80, 'patience': 20, 'batch_size': 16},      # Increased for convergence
+            'gan': {'epochs': 50, 'patience': 15, 'batch_size': 16},      # Reduced for faster training
             'mobilenet': {'epochs': 100, 'patience': 25, 'batch_size': 16},  # More epochs for stability
             'resnet': {'epochs': 120, 'patience': 30, 'batch_size': 16},     # More epochs for complex architecture
             'mdnn': {'epochs': 100, 'patience': 15, 'batch_size': 16}
@@ -40,6 +40,20 @@ class ModelTrainer:
         # Get class distribution
         unique_classes, class_counts = np.unique(y_train, return_counts=True)
         print(f"📊 Training class distribution: {dict(zip(unique_classes, class_counts))}")
+
+        if len(class_counts) == 0:
+            return None
+
+        min_count = class_counts.min()
+        max_count = class_counts.max()
+
+        if min_count == 0:
+            print("⚠️ Detected empty class during training. Continuing with automatic balancing weights.")
+        else:
+            imbalance_ratio = max_count / min_count
+            if imbalance_ratio <= 1.1:
+                print("⚖️ Training labels are already balanced; skipping class weights.")
+                return None
 
         # Compute balanced class weights
         class_weights = compute_class_weight(
@@ -62,69 +76,82 @@ class ModelTrainer:
 
     def setup_callbacks(self, method, patience):
         """Setup enhanced training callbacks for better convergence"""
+        monitor = 'val_accuracy'
+        mode = 'max'
+
+        if method == 'gan':
+            monitor = 'val_loss'
+            mode = 'min'
+
         # Consistent early stopping strategies for all methods
         if method == 'mobilenet':
             early_stopping = keras.callbacks.EarlyStopping(
-                monitor='val_accuracy',
+                monitor=monitor,
                 patience=25,  # Increased patience for more epochs
                 restore_best_weights=True,
                 verbose=1,
-                min_delta=0.002
+                min_delta=0.002,
+                mode=mode
             )
             lr_scheduler = keras.callbacks.ReduceLROnPlateau(
-                monitor='val_accuracy',
+                monitor=monitor,
                 patience=10,
                 factor=0.5,
                 min_lr=1e-6,
-                verbose=1
+                verbose=1,
+                mode=mode
             )
         elif method == 'gan':
             early_stopping = keras.callbacks.EarlyStopping(
-                monitor='val_loss',  # Monitor loss instead of accuracy for stability
-                patience=35,  # Much more patience for GAN convergence
+                monitor=monitor,  # Monitor loss instead of accuracy for stability
+                patience=15,  # Reduced patience for faster training
                 restore_best_weights=True,
                 verbose=1,
-                min_delta=0.001,  # Smaller threshold
-                mode='min'
+                min_delta=0.002,  # Slightly higher threshold
+                mode=mode
             )
             lr_scheduler = keras.callbacks.ReduceLROnPlateau(
-                monitor='val_loss',  # Monitor loss instead of accuracy
-                patience=15,  # More patience before reducing LR
-                factor=0.7,  # Less aggressive reduction
-                min_lr=1e-5,  # Higher min LR
+                monitor=monitor,  # Monitor loss instead of accuracy
+                patience=8,  # Less patience before reducing LR
+                factor=0.5,  # More aggressive reduction for faster convergence
+                min_lr=1e-6,  # Lower min LR
                 verbose=1,
-                mode='min'
+                mode=mode
             )
         elif method == 'resnet':
             early_stopping = keras.callbacks.EarlyStopping(
-                monitor='val_accuracy',
+                monitor=monitor,
                 patience=30,  # More patience for complex architecture
                 restore_best_weights=True,
                 verbose=1,
-                min_delta=0.002
+                min_delta=0.002,
+                mode=mode
             )
             lr_scheduler = keras.callbacks.ReduceLROnPlateau(
-                monitor='val_accuracy',
+                monitor=monitor,
                 patience=12,
                 factor=0.5,
                 min_lr=1e-6,
-                verbose=1
+                verbose=1,
+                mode=mode
             )
         else:
             # MDNN maintains original settings
             early_stopping = keras.callbacks.EarlyStopping(
-                monitor='val_accuracy',
+                monitor=monitor,
                 patience=15,
                 restore_best_weights=True,
                 verbose=1,
-                min_delta=0.005
+                min_delta=0.005,
+                mode=mode
             )
             lr_scheduler = keras.callbacks.ReduceLROnPlateau(
-                monitor='val_accuracy',
+                monitor=monitor,
                 patience=7,
                 factor=0.5,
                 min_lr=1e-6,
-                verbose=1
+                verbose=1,
+                mode=mode
             )
 
         # Unified smart callbacks with proper early stopping
@@ -134,8 +161,9 @@ class ModelTrainer:
             keras.callbacks.ModelCheckpoint(
                 str(self.models_path / f'{method}_multimodal_best_weights.h5'),
                 save_best_only=True,
-                monitor='val_accuracy',
-                verbose=1
+                monitor=monitor,
+                verbose=1,
+                mode=mode
             )
         ]
         return callbacks

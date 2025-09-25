@@ -1,0 +1,264 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Fetal Hypoxia Detection System</title>
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        .gradient-bg {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        }
+        .card-shadow {
+            box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+        }
+        .upload-zone {
+            border: 2px dashed #cbd5e0;
+            transition: all 0.3s ease;
+        }
+        .upload-zone.dragover {
+            border-color: #667eea;
+            background-color: #f7fafc;
+        }
+        .progress-bar {
+            transition: width 0.3s ease;
+        }
+        .result-card {
+            animation: fadeInUp 0.5s ease;
+        }
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+    </style>
+</head>
+<body class="bg-gray-50 min-h-screen">
+    <!-- Header -->
+    <header class="gradient-bg text-white py-6">
+        <div class="container mx-auto px-6">
+            <h1 class="text-3xl font-bold flex items-center">
+                <i class="fas fa-heartbeat mr-3"></i>
+                Fetal Hypoxia Detection System
+            </h1>
+            <p class="mt-2 text-blue-100">AI-powered multimodal analysis for fetal monitoring</p>
+        </div>
+    </header>
+
+    <div class="container mx-auto px-6 py-8">
+        <!-- Upload Section -->
+        <div class="bg-white rounded-lg card-shadow p-8 mb-8">
+            <h2 class="text-2xl font-semibold mb-6 text-gray-800">
+                <i class="fas fa-upload mr-2 text-blue-600"></i>
+                Upload CTG Files
+            </h2>
+
+            <div class="grid md:grid-cols-2 gap-6 mb-6">
+                <!-- HEA File Upload -->
+                <div class="upload-zone rounded-lg p-6 text-center" id="heaUploadZone">
+                    <input type="file" id="heaFile" accept=".hea" class="hidden">
+                    <i class="fas fa-file-alt text-4xl text-gray-400 mb-4"></i>
+                    <p class="text-gray-600 mb-2">Upload .HEA file</p>
+                    <p class="text-sm text-gray-400">Header file containing metadata</p>
+                    <div id="heaFileName" class="mt-2 text-sm text-green-600 hidden"></div>
+                </div>
+
+                <!-- DAT File Upload -->
+                <div class="upload-zone rounded-lg p-6 text-center" id="datUploadZone">
+                    <input type="file" id="datFile" accept=".dat" class="hidden">
+                    <i class="fas fa-database text-4xl text-gray-400 mb-4"></i>
+                    <p class="text-gray-600 mb-2">Upload .DAT file</p>
+                    <p class="text-sm text-gray-400">Signal data file</p>
+                    <div id="datFileName" class="mt-2 text-sm text-green-600 hidden"></div>
+                </div>
+            </div>
+
+            <!-- Method Selection -->
+            <div class="mb-6">
+                <label class="block text-sm font-medium text-gray-700 mb-3">
+                    <i class="fas fa-cog mr-2"></i>
+                    Detection Method
+                </label>
+                <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+                    <label class="flex items-center p-3 border rounded-lg cursor-pointer hover:bg-blue-50">
+                        <input type="radio" name="method" value="mdnn" checked class="mr-2">
+                        <div>
+                            <div class="font-medium">MDNN</div>
+                            <div class="text-xs text-gray-500">80%+ accuracy</div>
+                        </div>
+                    </label>
+                    <label class="flex items-center p-3 border rounded-lg cursor-pointer hover:bg-blue-50">
+                        <input type="radio" name="method" value="gan" class="mr-2">
+                        <div>
+                            <div class="font-medium">GAN</div>
+                            <div class="text-xs text-gray-500">60%+ accuracy</div>
+                        </div>
+                    </label>
+                    <label class="flex items-center p-3 border rounded-lg cursor-pointer hover:bg-blue-50">
+                        <input type="radio" name="method" value="mobilenet" class="mr-2">
+                        <div>
+                            <div class="font-medium">MobileNet</div>
+                            <div class="text-xs text-gray-500">75%+ accuracy</div>
+                        </div>
+                    </label>
+                    <label class="flex items-center p-3 border rounded-lg cursor-pointer hover:bg-blue-50">
+                        <input type="radio" name="method" value="resnet" class="mr-2">
+                        <div>
+                            <div class="font-medium">ResNet</div>
+                            <div class="text-xs text-gray-500">70%+ accuracy</div>
+                        </div>
+                    </label>
+                </div>
+            </div>
+
+            <!-- Analyze Button -->
+            <button
+                id="analyzeBtn"
+                class="w-full bg-blue-600 hover:bg-blue-700 text-white font-medium py-3 px-6 rounded-lg transition disabled:opacity-50 disabled:cursor-not-allowed"
+                disabled
+            >
+                <i class="fas fa-search mr-2"></i>
+                Analyze Files
+            </button>
+        </div>
+
+        <!-- Progress Section -->
+        <div id="progressSection" class="bg-white rounded-lg card-shadow p-6 mb-8 hidden">
+            <h3 class="text-lg font-semibold mb-4">
+                <i class="fas fa-spinner fa-spin mr-2"></i>
+                Processing...
+            </h3>
+            <div class="bg-gray-200 rounded-full h-2 mb-2">
+                <div id="progressBar" class="progress-bar bg-blue-600 h-2 rounded-full" style="width: 0%"></div>
+            </div>
+            <p id="progressText" class="text-sm text-gray-600">Initializing...</p>
+        </div>
+
+        <!-- Results Section -->
+        <div id="resultsSection" class="hidden">
+            <!-- Prediction Result -->
+            <div class="bg-white rounded-lg card-shadow p-8 mb-6 result-card">
+                <h3 class="text-2xl font-semibold mb-6">
+                    <i class="fas fa-chart-line mr-2 text-green-600"></i>
+                    Analysis Results
+                </h3>
+
+                <div class="grid md:grid-cols-2 gap-8">
+                    <!-- Main Result -->
+                    <div class="text-center">
+                        <div id="predictionBadge" class="inline-flex items-center px-6 py-3 rounded-full text-lg font-semibold mb-4">
+                            <i class="fas fa-heartbeat mr-2"></i>
+                            <span id="predictionText">-</span>
+                        </div>
+                        <div class="text-3xl font-bold mb-2" id="confidenceText">-</div>
+                        <div class="text-gray-600">Confidence Level</div>
+                    </div>
+
+                    <!-- Risk Assessment -->
+                    <div>
+                        <div class="mb-4">
+                            <div class="flex justify-between items-center mb-1">
+                                <span class="text-sm font-medium">Risk Level:</span>
+                                <span id="riskLevel" class="text-sm font-semibold">-</span>
+                            </div>
+                        </div>
+
+                        <div class="mb-4">
+                            <h4 class="font-medium mb-2">Recommendation:</h4>
+                            <p id="recommendation" class="text-sm text-gray-600 bg-gray-50 p-3 rounded">-</p>
+                        </div>
+
+                        <div class="mb-4">
+                            <h4 class="font-medium mb-2">Method Used:</h4>
+                            <span id="methodUsed" class="text-sm bg-blue-100 text-blue-800 px-2 py-1 rounded">-</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Probability Distribution -->
+                <div class="mt-8">
+                    <h4 class="font-medium mb-4">Probability Distribution</h4>
+                    <div class="space-y-3">
+                        <div class="flex items-center">
+                            <span class="w-20 text-sm">Normal</span>
+                            <div class="flex-1 bg-gray-200 rounded-full h-4 mx-4">
+                                <div id="normalProb" class="bg-green-500 h-4 rounded-full" style="width: 0%"></div>
+                            </div>
+                            <span id="normalPct" class="w-12 text-sm text-right">0%</span>
+                        </div>
+                        <div class="flex items-center">
+                            <span class="w-20 text-sm">Suspect</span>
+                            <div class="flex-1 bg-gray-200 rounded-full h-4 mx-4">
+                                <div id="suspectProb" class="bg-yellow-500 h-4 rounded-full" style="width: 0%"></div>
+                            </div>
+                            <span id="suspectPct" class="w-12 text-sm text-right">0%</span>
+                        </div>
+                        <div class="flex items-center">
+                            <span class="w-20 text-sm">Hypoxia</span>
+                            <div class="flex-1 bg-gray-200 rounded-full h-4 mx-4">
+                                <div id="hypoxiaProb" class="bg-red-500 h-4 rounded-full" style="width: 0%"></div>
+                            </div>
+                            <span id="hypoxiaPct" class="w-12 text-sm text-right">0%</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Clinical Insights -->
+                <div id="insightsSection" class="mt-8 hidden">
+                    <h4 class="font-medium mb-3">Clinical Insights</h4>
+                    <div id="insightsList" class="bg-blue-50 p-4 rounded-lg">
+                        <!-- Insights will be populated here -->
+                    </div>
+                </div>
+            </div>
+
+            <!-- Processing Info -->
+            <div class="bg-white rounded-lg card-shadow p-6 result-card">
+                <h3 class="text-lg font-semibold mb-4">
+                    <i class="fas fa-info-circle mr-2"></i>
+                    Processing Information
+                </h3>
+                <div class="grid md:grid-cols-3 gap-4 text-sm">
+                    <div>
+                        <span class="font-medium">Record ID:</span>
+                        <span id="recordId" class="ml-2">-</span>
+                    </div>
+                    <div>
+                        <span class="font-medium">Signal Length:</span>
+                        <span id="signalLength" class="ml-2">-</span>
+                    </div>
+                    <div>
+                        <span class="font-medium">Duration:</span>
+                        <span id="duration" class="ml-2">-</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Error Section -->
+        <div id="errorSection" class="bg-red-50 border border-red-200 rounded-lg p-6 hidden">
+            <h3 class="text-lg font-semibold text-red-800 mb-2">
+                <i class="fas fa-exclamation-triangle mr-2"></i>
+                Analysis Error
+            </h3>
+            <p id="errorMessage" class="text-red-700">-</p>
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <footer class="bg-gray-800 text-white py-8 mt-16">
+        <div class="container mx-auto px-6 text-center">
+            <p>&copy; 2024 Fetal Hypoxia Detection System. AI-powered medical analysis.</p>
+            <p class="text-gray-400 text-sm mt-2">For research and educational purposes</p>
+        </div>
+    </footer>
+
+    <script src="app.js"></script>
+</body>
+</html>

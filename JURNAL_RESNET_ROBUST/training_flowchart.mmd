@@ -1,0 +1,22 @@
+flowchart TD
+    A[Start] --> B{Dataset Cached?}
+    B -- Yes --> C[Load cached multimodal dataset]
+    B -- No --> D[Generate dataset via processed clinical CSV + signals]
+    D --> C
+    C --> E[Split data into signals and clinical arrays]
+    E --> F[Clinical preprocessing\n• Label-aware median imputation\n• 3σ clipping\n• StandardScaler fit]
+    F --> G[FHR preprocessing\n• Clip 50-200 bpm\n• Resample to 5000 samples\n• Median/MAD normalisation]
+    G --> H[Stratified train/val/test split (70/15/15)]
+    H --> I[Targeted augmentation\n• Noise + time shift per class]
+    I --> J[SMOTETomek resampling to rebalance classes]
+    J --> K[Compute enhanced class weights\n( hypoxia ×1.5 )]
+    K --> L[Build ResNet multimodal model]
+    L --> M[Configure optimizer\nAdam lr=6e-4 β1=0.9 β2=0.999]
+    M --> N[Attach callbacks\nEarlyStopping (patience 30)\nReduceLROnPlateau (patience 12)\nModelCheckpoint]
+    N --> O[Train model up to 120 epochs\nBatch size 16]
+    O --> P[Evaluate on hold-out test set]
+    P --> Q[Generate predictions for metrics]
+    Q --> R[Compute reports\n• Classification report\n• Confusion matrix]
+    R --> S[Produce visual analytics\n12 training plots]
+    S --> T[Persist artifacts\nBest weights + PKL package]
+    T --> U[Finish]

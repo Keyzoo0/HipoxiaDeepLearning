@@ -1,0 +1,22 @@
+flowchart TD
+    A[Start] --> B{ResNet model loaded?}
+    B -- Yes --> C[Reuse in-memory model]
+    B -- No --> D[Load PKL bundle\n• Deserialize Keras model\n• Restore scaler & metadata]
+    D --> C
+    C --> E[Fetch record signals from processed_data/signals]
+    E --> F{Signal found?}
+    F -- No --> X[Abort with missing signal error]
+    F -- Yes --> G[Preprocess FHR\n• Clip 50-200 bpm\n• Resample to 5000\n• Median/MAD normalise]
+    G --> H[Fetch clinical row from clinical_dataset.csv]
+    H --> I{Clinical data available?}
+    I -- No --> Y[Abort with missing clinical error]
+    I -- Yes --> J[Convert features to numeric + impute]
+    J --> K[Apply stored StandardScaler]
+    K --> L[Assemble inputs\nsignal → (1,5000)\nclinical → (1,N)]
+    L --> M[Model inference\nsoftmax probabilities]
+    M --> N[Select predicted class + confidence]
+    N --> O[Compose result payload]
+    O --> P[Generate prediction diagnostics\n12 PNG visuals]
+    P --> Q[Return prediction + artifacts]
+    X --> Q
+    Y --> Q

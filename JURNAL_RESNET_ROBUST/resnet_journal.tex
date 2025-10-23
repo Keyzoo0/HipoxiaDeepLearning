@@ -1,0 +1,201 @@
+\documentclass[12pt,a4paper]{article}
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{geometry}
+\usepackage{setspace}
+\usepackage{graphicx}
+\usepackage{caption}
+\usepackage{subcaption}
+\usepackage{float}
+\usepackage{booktabs}
+\usepackage{array}
+\geometry{margin=1in}
+\setstretch{1.15}
+\graphicspath{{../results/training_plots/trainingResultResNetMethod/}{../results/prediction_analysis/predictionResultResNetMethod/}}
+
+\title{Resilient Multimodal Residual Networks for Fetal Hypoxia Detection}
+\author{Multimodal Hypoxia Detection Team}
+\date{\today}
+
+\begin{document}
+
+\maketitle
+
+\begin{abstract}
+A residual neural network (ResNet) branch embedded within the Multimodal Hypoxia Detection System delivers state-of-the-art accuracy for fetal hypoxia screening by fusing fetal heart rate (FHR) signals with structured clinical data. This journal-style report summarises the end-to-end pipeline, highlights robustness mechanisms across data processing, model design, and training, and curates key visual artefacts (training behaviour and prediction analytics). We conclude by identifying appropriate publication venues focused on clinical machine learning and robust healthcare AI.
+\end{abstract}
+
+\section{Introduction}
+Fetal hypoxia remains a critical obstetric complication whose early detection can prevent adverse neonatal outcomes. Conventional cardiotocography (CTG) interpretation suffers from inter-observer variability and limited sensitivity. The Multimodal Hypoxia Detection System addresses these gaps through deep learning architectures; among them, the ResNet variant achieves the highest internal accuracy (96.1\%) by exploiting residual temporal convolutions and modality-aware fusion. This report distils implementation insights to support manuscript preparation.
+
+\section{Materials and Methods}
+\subsection{Dataset}
+We use the CTU-UHB intrapartum CTG database (552 recordings, 4~Hz sampling, 90 minutes each). For every record, the system ingests a 5{,}000-sample FHR sequence and a vector of 26+ clinical parameters (pH, base deficit, Apgar scores, maternal history). Labels (Normal, Suspect, Hypoxia) stem from umbilical artery pH and clinical outcomes.
+
+\subsection{Signal and Clinical Preprocessing}
+Robust preprocessing in \texttt{methods/data\_handler.py} clips FHR to physiological bounds (50--200~bpm), resamples sequences to uniform length, and applies median/MAD normalisation. Clinical variables undergo label-aware imputation (class-conditioned medians for pH), 3-$\sigma$ clipping, and standardisation via \texttt{StandardScaler}. Advanced augmentation introduces controlled Gaussian noise and time shifts for minority classes before applying SMOTETomek to balance class boundaries.
+
+\subsection{Model Architecture}
+The ResNet branch (\texttt{methods/model\_builder.py:97--208}) reshapes signals to $(5000,1)$ and applies:
+\begin{itemize}
+    \item Conv1D stem with 64 filters (kernel 31) followed by batch normalisation, max pooling (stride 8), and dropout (0.2).
+    \item A residual block with two Conv1D layers (128 filters, kernel 15) and a 1$\times$1 projection on the skip path to maintain dimensional alignment. Batch normalisation stabilises each convolution.
+    \item Max pooling (factor 4) and global average pooling to summarise temporal patterns while limiting parameters.
+    \item Dense refinement (128 and 64 units with dropout) producing the signal embedding.
+\end{itemize}
+The clinical branch traverses dense layers of sizes 48, 32, and 16 (with batch normalisation and dropout). Concatenated features pass through an attention-style softmax weighting layer that dynamically emphasises informative modalities before a classifier head (144, 96, 48, 32 units) culminating in a 3-way softmax output.
+
+\subsection{Training Strategy}
+Training leverages Adam (learning rate $6\times 10^{-4}$, $\beta_1=0.9$, $\beta_2=0.999$) for up to 120 epochs with batch size 16. Early stopping (patience 30 on validation accuracy) and ReduceLROnPlateau (patience 12) maintain stability, while checkpoints preserve the best weights. Enhanced class weights re-weight hypoxia labels 1.5$\times$ to prioritise recall on rare but critical cases.
+
+\section{Robustness Mechanisms}
+Robustness arises from stacked interventions:
+\begin{enumerate}
+    \item \textbf{Residual learning} mitigates gradient degradation and enables the network to focus on incremental corrections to baseline trends.
+    \item \textbf{Robust statistics} (median/MAD, clipping) shield the model from sensor spikes and missingness.
+    \item \textbf{Targeted augmentation and SMOTETomek} extend minority class diversity prior to resampling, preserving physiological nuance.
+    \item \textbf{Adaptive fusion} through attention-based reweighting reallocates emphasis when either modality degrades.
+    \item \textbf{Regularisation suite} (dropout 0.2--0.4, batch normalisation, learning-rate scheduling) guards against overfitting in limited-data regimes.
+\end{enumerate}
+
+\section{Results}
+\subsection{Quantitative Performance}
+Table~\ref{tab:performance} summarises headline metrics from internal evaluation reported in \texttt{results/README.md}.
+
+\begin{table}[H]
+    \centering
+    \begin{tabular}{@{}lcccc@{}}
+        \toprule
+        Method & Accuracy & Precision & Recall & F1-Score \\
+        \midrule
+        MDNN & 0.942 & 0.938 & 0.941 & 0.939 \\
+        GAN & 0.948 & 0.944 & 0.946 & 0.945 \\
+        MobileNet & 0.953 & 0.949 & 0.951 & 0.950 \\
+        \textbf{ResNet} & \textbf{0.961} & \textbf{0.957} & \textbf{0.959} & \textbf{0.958} \\
+        \bottomrule
+    \end{tabular}
+    \caption{Performance comparison across multimodal architectures. Bolded row indicates the focus of this report.}
+    \label{tab:performance}
+\end{table}
+
+\subsection{Training Dynamics}
+Figures~\ref{fig:training1}--\ref{fig:training3} showcase core training plots.
+
+\begin{figure}[H]
+    \centering
+    \begin{subfigure}[b]{0.45\textwidth}
+        \centering
+        \includegraphics[width=\textwidth]{01_training_loss.png}
+        \caption{Loss trajectory}
+    \end{subfigure}
+    \hfill
+    \begin{subfigure}[b]{0.45\textwidth}
+        \centering
+        \includegraphics[width=\textwidth]{02_training_accuracy.png}
+        \caption{Accuracy trajectory}
+    \end{subfigure}
+    \caption{ResNet training curves.}
+    \label{fig:training1}
+\end{figure}
+
+\begin{figure}[H]
+    \centering
+    \begin{subfigure}[b]{0.45\textwidth}
+        \centering
+        \includegraphics[width=\textwidth]{03_confusion_matrix.png}
+        \caption{Confusion matrix}
+    \end{subfigure}
+    \hfill
+    \begin{subfigure}[b]{0.45\textwidth}
+        \centering
+        \includegraphics[width=\textwidth]{04_roc_curves.png}
+        \caption{ROC curves}
+    \end{subfigure}
+    \caption{Generalisation diagnostics.}
+    \label{fig:training2}
+\end{figure}
+
+\begin{figure}[H]
+    \centering
+    \begin{subfigure}[b]{0.45\textwidth}
+        \centering
+        \includegraphics[width=\textwidth]{05_performance_metrics.png}
+        \caption{Macro performance}
+    \end{subfigure}
+    \hfill
+    \begin{subfigure}[b]{0.45\textwidth}
+        \centering
+        \includegraphics[width=\textwidth]{12_error_analysis.png}
+        \caption{Error analysis}
+    \end{subfigure}
+    \caption{Aggregate metric summary.}
+    \label{fig:training3}
+\end{figure}
+
+\subsection{Prediction Analytics}
+Figures~\ref{fig:prediction1}--\ref{fig:prediction3} capture exemplar prediction outputs generated by the ResNet model.
+
+\begin{figure}[H]
+    \centering
+    \begin{subfigure}[b]{0.45\textwidth}
+        \centering
+        \includegraphics[width=\textwidth]{01_class_probabilities.png}
+        \caption{Class probabilities}
+    \end{subfigure}
+    \hfill
+    \begin{subfigure}[b]{0.45\textwidth}
+        \centering
+        \includegraphics[width=\textwidth]{02_confidence_gauge.png}
+        \caption{Confidence gauge}
+    \end{subfigure}
+    \caption{Prediction certainty visualisations.}
+    \label{fig:prediction1}
+\end{figure}
+
+\begin{figure}[H]
+    \centering
+    \begin{subfigure}[b]{0.45\textwidth}
+        \centering
+        \includegraphics[width=\textwidth]{04_clinical_recommendation.png}
+        \caption{Clinical recommendation}
+    \end{subfigure}
+    \hfill
+    \begin{subfigure}[b]{0.45\textwidth}
+        \centering
+        \includegraphics[width=\textwidth]{07_feature_importance.png}
+        \caption{Feature importance}
+    \end{subfigure}
+    \caption{Decision support overlays.}
+    \label{fig:prediction2}
+\end{figure}
+
+\begin{figure}[H]
+    \centering
+    \begin{subfigure}[b]{0.45\textwidth}
+        \centering
+        \includegraphics[width=\textwidth]{09_uncertainty_analysis.png}
+        \caption{Uncertainty analysis}
+    \end{subfigure}
+    \hfill
+    \begin{subfigure}[b]{0.45\textwidth}
+        \centering
+        \includegraphics[width=\textwidth]{12_quality_metrics.png}
+        \caption{Signal quality metrics}
+    \end{subfigure}
+    \caption{Risk governance views for clinicians.}
+    \label{fig:prediction3}
+\end{figure}
+
+\section{Discussion and Target Journals}
+The ResNet pathway exhibits no catastrophic overfitting, sustains high recall on hypoxia cases, and produces clinician-facing artefacts. These attributes align with publication venues emphasising robust machine learning in healthcare, such as:
+\begin{itemize}
+    \item \textbf{IEEE Journal of Biomedical and Health Informatics} --- focuses on signal processing and AI robustness in clinical decision support.
+    \item \textbf{npj Digital Medicine} --- values translational AI studies with comprehensive validation and interpretability.
+    \item \textbf{Artificial Intelligence in Medicine} --- dedicated to rigorous ML methodologies addressing clinical reliability and robustness challenges.
+\end{itemize}
+A submission should emphasise the multimodal residual architecture, robustness interventions (augmentation, class weighting, attention fusion), and prospective deployment considerations.
+
+\section{Conclusion}
+The curated artefacts confirm that the ResNet-based multimodal pipeline yields robust, high-accuracy fetal hypoxia predictions. Residual convolutions, modality-aware attention, and disciplined data balancing collectively underpin performance. The accompanying figures and summaries provide a foundation for drafting a full manuscript targeting top biomedical informatics outlets.
+
+\end{document}
